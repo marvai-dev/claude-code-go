@@ -1,0 +1,24 @@
+# Taskfile for development and CI tasks.
+# Install Task: https://taskfile.dev/#/installation
+version: '3'
+
+tasks:
+  # Default task: build and run tests
+  dashboard:
+    desc: Build the project and run all tests (default)
+    default: true
+    deps:
+      - build
+      - test
+
+  build:
+    desc: Build the CLI binary and Go packages
+    cmds:
+      - go mod tidy
+      - go build -o claude-go ./cmd/claudecli
+      - go build ./...
+
+  test:
+    desc: Run the full test suite
+    cmds:
+      - go test -v ./...
