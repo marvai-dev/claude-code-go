@@ -184,6 +184,125 @@ tasks:
       - echo "Visit http://localhost:6060/pkg/github.com/lancekrogers/claude-code-go/"
       - godoc -http=:6060
 
+  # Integration Testing Tasks
+  test-integration:
+    desc: "🧪 Run integration tests with mock server"
+    cmds:
+      - task: start-mock-server-bg
+      - sleep 2
+      - INTEGRATION_TESTS=1 USE_MOCK_SERVER=1 go test -tags=integration ./test/integration -v
+      - task: stop-mock-server
+
+  test-integration-real:
+    desc: "🧪 Run integration tests with real Claude Code CLI"
+    cmds:
+      - echo "⚠️  This will use real Claude Code CLI and may consume credits"
+      - echo "Claude will handle authentication automatically if needed"
+      - INTEGRATION_TESTS=1 go test -tags=integration ./test/integration -v
+
+  test-e2e:
+    desc: "🧪 Run end-to-end tests"
+    cmds:
+      - task: build
+      - echo "🧪 Running end-to-end tests..."
+      - ./bin/{{.BINARY_NAME}} --help > /dev/null || (echo "❌ CLI binary failed" && exit 1)
+      - echo "✅ CLI binary works"
+      - echo "🧪 Testing basic functionality..."
+      - echo "Hello, test!" | ./bin/{{.BINARY_NAME}} -p "Echo this back" --claude-path echo || true
+      - echo "✅ E2E tests completed"
+
+  # Mock Server Tasks
+  start-mock-server:
+    desc: "🚀 Start mock Claude server"
+    cmds:
+      - echo "🚀 Starting mock Claude server on port 8080..."
+      - go run test/mockserver/main.go
+
+  start-mock-server-bg:
+    desc: "🚀 Start mock Claude server in background"
+    cmds:
+      - echo "🚀 Starting mock Claude server in background..."
+      - go run test/mockserver/main.go &
+      - echo $! > /tmp/mock-server.pid
+
+  stop-mock-server:
+    desc: "🛑 Stop mock Claude server"
+    cmds:
+      - |
+        if [ -f /tmp/mock-server.pid ]; then
+          kill $(cat /tmp/mock-server.pid) 2>/dev/null || true
+          rm -f /tmp/mock-server.pid
+          echo "🛑 Mock server stopped"
+        fi
+
+  test-mock-server:
+    desc: "🧪 Test mock server functionality"
+    cmds:
+      - echo "🧪 Testing mock server..."
+      - curl -X POST http://localhost:8080/claude -d '-p "Hello world"' -s
+      - echo ""
+      - curl -X POST http://localhost:8080/claude -d '-p "Hello" --output-format json' -s | jq .
+      - echo "✅ Mock server tests completed"
+
+  # Benchmark and Performance Testing
+  test-bench:
+    desc: "📊 Run benchmark tests"
+    cmds:
+      - echo "📊 Running benchmark tests..."
+      - go test -bench=. ./pkg/claude -benchmem
+      - echo "✅ Benchmark tests completed"
+
+  test-race:
+    desc: "🏃 Run tests with race detection"
+    cmds:
+      - echo "🏃 Running tests with race detection..."
+      - go test -race ./...
+      - echo "✅ Race detection tests completed"
+
+  test-memory:
+    desc: "🧠 Run memory profiling tests"
+    cmds:
+      - echo "🧠 Running memory profiling tests..."
+      - go test -memprofile=mem.prof ./pkg/claude
+      - go tool pprof mem.prof
+      - echo "✅ Memory profiling completed"
+
+  # Local Development Testing
+  test-local:
+    desc: "🏠 Run local development tests"
+    cmds:
+      - echo "🏠 Running local development test suite..."
+      - task: test
+      - task: test-integration
+      - task: test-e2e
+      - echo "✅ All local tests completed"
+
+  # Comprehensive Testing
+  test-full:
+    desc: "🎯 Run comprehensive test suite"
+    cmds:
+      - echo "🎯 Running comprehensive test suite..."
+      - task: test
+      - task: test-race
+      - task: test-integration
+      - task: test-bench
+      - echo "✅ Comprehensive testing completed"
+
+  # Setup Testing Environment
+  setup-test-env:
+    desc: "⚙️ Setup testing environment"
+    cmds:
+      - echo "⚙️ Setting up testing environment..."
+      - |
+        echo "export CLAUDE_CODE_PATH=claude" >> .env.test
+        echo "export TEST_TIMEOUT=30s" >> .env.test
+        echo "export MOCK_SERVER_PORT=8080" >> .env.test
+        echo "export USE_MOCK_SERVER=1" >> .env.test
+        echo "# Set USE_MOCK_SERVER=0 to use real Claude CLI" >> .env.test
+      - echo "✅ Test environment setup complete"
+      - echo "📝 Edit .env.test to configure your testing environment"
+      - echo "💡 Claude Code CLI will handle authentication automatically when needed"
+
   release:
     desc: "Build release binaries for multiple platforms"
     cmds:

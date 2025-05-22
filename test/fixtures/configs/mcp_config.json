@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "./test"],
+      "env": {}
+    },
+    "test-server": {
+      "command": "echo",
+      "args": ["Mock MCP server"],
+      "env": {
+        "TEST_MODE": "1"
+      }
+    }
+  }
+}
