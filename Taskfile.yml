@@ -2,15 +2,12 @@ version: '3'
 
 vars:
   PROJECT_NAME: Claude Code Go SDK
-  BINARY_NAME: claude-go
-  BIN_DIR: ./bin
-  BUILD_DIR: ./build
   COVERAGE_DIR: ./coverage
 
 tasks:
   default:
-    desc: "Run complete build and test pipeline with dashboard"
-    aliases: [all, dashboard]
+    desc: "Run complete build and test pipeline"
+    aliases: [all]
     cmds:
       - task: banner
       - task: clean
@@ -18,7 +15,7 @@ tasks:
       - task: build-all
       - task: test-all
       - task: coverage
-      - task: dashboard-summary
+      - task: summary
 
   banner:
     desc: "Display project banner"
@@ -33,12 +30,9 @@ tasks:
   clean:
     desc: "Clean build artifacts and test cache"
     cmds:
-      - rm -rf {{.BIN_DIR}}
-      - rm -rf {{.BUILD_DIR}}
       - rm -rf {{.COVERAGE_DIR}}
-      - rm -f {{.BINARY_NAME}}
       - go clean -cache -testcache
-      - mkdir -p {{.BIN_DIR}} {{.BUILD_DIR}} {{.COVERAGE_DIR}}
+      - mkdir -p {{.COVERAGE_DIR}}
 
   deps:
     desc: "Download and verify dependencies"
@@ -53,7 +47,6 @@ tasks:
     desc: "Build all components"
     cmds:
       - task: build-lib
-      - task: build-cli
       - task: build-examples
 
   build-lib:
@@ -63,26 +56,19 @@ tasks:
       - go build ./pkg/claude
       - echo "✅ Core library built successfully"
 
-  build-cli:
-    desc: "Build the CLI binary"
-    cmds:
-      - echo "🔨 Building CLI binary..."
-      - go build -o {{.BIN_DIR}}/{{.BINARY_NAME}} ./cmd/claudecli
-      - echo "✅ CLI binary built at {{.BIN_DIR}}/{{.BINARY_NAME}}"
-
   build-examples:
     desc: "Build example programs"
     cmds:
       - echo "🔨 Building examples..."
-      - go build -o {{.BIN_DIR}}/basic-example ./examples/basic || echo "❌ Basic example build failed"
-      - go build -o {{.BIN_DIR}}/advanced-example ./examples/advanced || echo "❌ Advanced example build failed"
+      - go build ./examples/basic || echo "❌ Basic example build failed"
+      - go build ./examples/advanced || echo "❌ Advanced example build failed"
+      - go build ./examples/testing || echo "❌ Testing example build failed"
       - echo "✅ Example builds completed (check for errors above)"
 
   test-all:
     desc: "Run all tests"
     cmds:
       - task: test-lib
-      - task: test-cli
 
   test-lib:
     desc: "Test the core library"
@@ -90,13 +76,6 @@ tasks:
       - echo "🧪 Testing core library..."
       - go test -v ./pkg/claude || echo "❌ Core library tests failed"
       - echo "✅ Core library tests completed (check for errors above)"
-
-  test-cli:
-    desc: "Test the CLI"
-    cmds:
-      - echo "🧪 Testing CLI..."
-      - go test -v ./cmd/claudecli || echo "❌ CLI tests failed"
-      - echo "✅ CLI tests completed (check for errors above)"
 
   coverage:
     desc: "Generate test coverage report"
@@ -107,8 +86,8 @@ tasks:
       - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html || echo "❌ HTML coverage report failed"
       - echo "✅ Coverage generation completed (check for errors above)"
 
-  dashboard-summary:
-    desc: "Display final dashboard summary"
+  summary:
+    desc: "Display final summary"
     silent: true
     cmds:
       - echo ""
@@ -118,25 +97,16 @@ tasks:
       - echo ""
       - echo "🎉 Build and test pipeline completed!"
       - echo ""
-      - echo "📁 Build Artifacts:"
-      - echo "   • CLI Binary at {{.BIN_DIR}}/{{.BINARY_NAME}}"
-      - echo "   • Examples at {{.BIN_DIR}}/"
+      - echo "📁 SDK Library:"
+      - echo "   • pkg/claude/ - Go SDK ready for import"
       - echo ""
       - echo "📊 Reports:"
       - echo "   • Coverage at {{.COVERAGE_DIR}}/coverage.html"
       - echo ""
-      - echo "🚀 Next Steps:"
-      - echo "   • Run CLI with {{.BIN_DIR}}/{{.BINARY_NAME}} --help"
-      - echo "   • Install with task install"
-      - echo "   • Development with task dev"
+      - echo "🚀 Usage:"
+      - echo "   • import \"github.com/lancekrogers/claude-code-go/pkg/claude\""
+      - echo "   • See examples/ for usage patterns"
       - echo ""
-
-  build:
-    desc: "Build CLI binary only"
-    cmds:
-      - mkdir -p {{.BIN_DIR}}
-      - go build -o {{.BIN_DIR}}/{{.BINARY_NAME}} ./cmd/claudecli
-      - echo "✅ Binary built at {{.BIN_DIR}}/{{.BINARY_NAME}}"
 
   test:
     desc: "Run tests with verbose output"
@@ -164,19 +134,6 @@ tasks:
       - go mod tidy
       - echo "✅ Common issues fixed"
 
-  install:
-    desc: "Install the CLI binary to GOPATH/bin"
-    cmds:
-      - go install ./cmd/claudecli
-      - echo "✅ Installed to $(go env GOPATH)/bin/claudecli"
-
-  dev:
-    desc: "Development mode - build and test on changes"
-    deps: [build]
-    cmds:
-      - echo "🔄 Development mode - watching for changes..."
-      - echo "Use Ctrl+C to stop"
-
   docs:
     desc: "Generate and serve documentation"
     cmds:
@@ -199,17 +156,6 @@ tasks:
       - echo "⚠️  This will use real Claude Code CLI and may consume credits"
       - echo "Claude will handle authentication automatically if needed"
       - INTEGRATION_TESTS=1 go test -tags=integration ./test/integration -v
-
-  test-e2e:
-    desc: "🧪 Run end-to-end tests"
-    cmds:
-      - task: build
-      - echo "🧪 Running end-to-end tests..."
-      - ./bin/{{.BINARY_NAME}} --help > /dev/null || (echo "❌ CLI binary failed" && exit 1)
-      - echo "✅ CLI binary works"
-      - echo "🧪 Testing basic functionality..."
-      - echo "Hello, test!" | ./bin/{{.BINARY_NAME}} -p "Echo this back" --claude-path echo || true
-      - echo "✅ E2E tests completed"
 
   # Mock Server Tasks
   start-mock-server:
@@ -274,7 +220,6 @@ tasks:
       - echo "🏠 Running local development test suite..."
       - task: test
       - task: test-integration
-      - task: test-e2e
       - echo "✅ All local tests completed"
 
   # Comprehensive Testing
@@ -302,17 +247,3 @@ tasks:
       - echo "✅ Test environment setup complete"
       - echo "📝 Edit .env.test to configure your testing environment"
       - echo "💡 Claude Code CLI will handle authentication automatically when needed"
-
-  release:
-    desc: "Build release binaries for multiple platforms"
-    cmds:
-      - task: clean
-      - task: test-all
-      - mkdir -p {{.BIN_DIR}}/release
-      - echo "🚀 Building release binaries..."
-      - GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o {{.BIN_DIR}}/release/{{.BINARY_NAME}}-linux-amd64 ./cmd/claudecli
-      - GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o {{.BIN_DIR}}/release/{{.BINARY_NAME}}-darwin-amd64 ./cmd/claudecli
-      - GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o {{.BIN_DIR}}/release/{{.BINARY_NAME}}-darwin-arm64 ./cmd/claudecli
-      - GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o {{.BIN_DIR}}/release/{{.BINARY_NAME}}-windows-amd64.exe ./cmd/claudecli
-      - echo "✅ Release binaries built in {{.BIN_DIR}}/release/"
-      - ls -la {{.BIN_DIR}}/release/

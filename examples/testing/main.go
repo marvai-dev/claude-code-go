@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/lancekrogers/claude-code-go/pkg/claude"
@@ -33,15 +32,15 @@ func main() {
 
 	fmt.Println()
 
-	// Example 2: Testing with real Claude (if available)
-	fmt.Println("Example 2: Testing with Real Claude API")
+	// Example 2: Testing with real Claude CLI (if available)
+	fmt.Println("Example 2: Testing with Real Claude CLI")
 	
-	if os.Getenv("ANTHROPIC_API_KEY") != "" {
+	if isClaudeCLIAvailable() {
 		realClient := claude.NewClient("claude")
-		testBasicFunctionality(realClient, "Real Claude API")
+		testBasicFunctionality(realClient, "Real Claude CLI")
 	} else {
-		fmt.Println("⚠️  ANTHROPIC_API_KEY not set, skipping real API tests")
-		fmt.Println("   Set your API key: export ANTHROPIC_API_KEY=your-key")
+		fmt.Println("⚠️  Claude CLI not available, skipping real tests")
+		fmt.Println("   Install Claude CLI: https://docs.anthropic.com/en/docs/claude-code/getting-started")
 	}
 
 	fmt.Println()
@@ -163,6 +162,24 @@ func isMockServerRunning() bool {
 		Format: claude.TextOutput,
 	})
 	return err == nil
+}
+
+func isClaudeCLIAvailable() bool {
+	// Check if Claude CLI is available in PATH
+	client := claude.NewClient("claude")
+	_, err := client.RunPrompt("test", &claude.RunOptions{
+		Format: claude.TextOutput,
+	})
+	// If there's no exec error, Claude CLI is available
+	// (authentication failures are handled by Claude CLI automatically)
+	return err == nil || (err != nil && !isExecError(err))
+}
+
+func isExecError(err error) bool {
+	// Check if error is related to executable not found
+	return err != nil && (
+		err.Error() == "claude command failed: exec: \"claude\": executable file not found in $PATH: " ||
+		err.Error() == "exec: \"claude\": executable file not found in $PATH")
 }
 
 func min(a, b int) int {
