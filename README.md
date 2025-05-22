@@ -21,6 +21,9 @@ go get github.com/lancekrogers/claude-code-go
 
 ## Prerequisites
 
+- **Claude Max Subscription**: Claude Code requires a Claude Max subscription
+  - **[Sign up for Claude Max](https://claude.ai/referral/UKHPp7nGJw)** to access Claude Code CLI
+  - Claude Max provides unlimited usage of Claude Code with advanced features
 - **Claude Code CLI**: Must be installed and accessible in your PATH
   - Install from: <https://docs.anthropic.com/en/docs/claude-code/getting-started>
   - The CLI handles authentication automatically when needed

@@ -119,6 +119,11 @@ func TestValidation(t *testing.T) {
 	client := utils.NewTestClient(t)
 
 	t.Run("ValidMCPTool", func(t *testing.T) {
+		// Skip MCP tool testing with real Claude CLI unless MCP config is provided
+		if !utils.IsMockServerMode() {
+			t.Skip("Skipping MCP tool test with real Claude CLI (would require MCP configuration)")
+		}
+
 		_, err := client.RunPrompt("test", &claude.RunOptions{
 			Format:       claude.JSONOutput,
 			AllowedTools: []string{"mcp__filesystem__read_file", "Bash"},
@@ -135,7 +140,7 @@ func TestValidation(t *testing.T) {
 	t.Run("InvalidMCPTool", func(t *testing.T) {
 		_, err := client.RunPrompt("test", &claude.RunOptions{
 			Format:       claude.JSONOutput,
-			AllowedTools: []string{"mcp_invalid_tool"},
+			AllowedTools: []string{"mcp__invalid"},
 		})
 
 		// This should fail due to validation

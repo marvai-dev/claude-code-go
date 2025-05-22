@@ -2,6 +2,7 @@ version: '3'
 
 vars:
   PROJECT_NAME: Claude Code Go SDK
+  BIN_DIR: ./bin
   COVERAGE_DIR: ./coverage
 
 tasks:
@@ -30,9 +31,10 @@ tasks:
   clean:
     desc: "Clean build artifacts and test cache"
     cmds:
+      - rm -rf {{.BIN_DIR}}
       - rm -rf {{.COVERAGE_DIR}}
       - go clean -cache -testcache
-      - mkdir -p {{.COVERAGE_DIR}}
+      - mkdir -p {{.BIN_DIR}} {{.COVERAGE_DIR}}
 
   deps:
     desc: "Download and verify dependencies"
@@ -60,9 +62,10 @@ tasks:
     desc: "Build example programs"
     cmds:
       - echo "🔨 Building examples..."
-      - go build ./examples/basic || echo "❌ Basic example build failed"
-      - go build ./examples/advanced || echo "❌ Advanced example build failed"
-      - go build ./examples/testing || echo "❌ Testing example build failed"
+      - mkdir -p {{.BIN_DIR}}
+      - go build -o {{.BIN_DIR}}/basic-example ./examples/basic || echo "❌ Basic example build failed"
+      - go build -o {{.BIN_DIR}}/advanced-example ./examples/advanced || echo "❌ Advanced example build failed"
+      - go build -o {{.BIN_DIR}}/testing-example ./examples/testing || echo "❌ Testing example build failed"
       - echo "✅ Example builds completed (check for errors above)"
 
   test-all:
@@ -99,6 +102,11 @@ tasks:
       - echo ""
       - echo "📁 SDK Library:"
       - echo "   • pkg/claude/ - Go SDK ready for import"
+      - echo ""
+      - echo "📁 Example Binaries:"
+      - echo "   • {{.BIN_DIR}}/basic-example - Basic usage examples"
+      - echo "   • {{.BIN_DIR}}/advanced-example - Advanced MCP examples"
+      - echo "   • {{.BIN_DIR}}/testing-example - Testing utilities"
       - echo ""
       - echo "📊 Reports:"
       - echo "   • Coverage at {{.COVERAGE_DIR}}/coverage.html"

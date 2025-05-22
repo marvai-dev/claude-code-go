@@ -171,6 +171,9 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 	// Force stream-json format for streaming
 	streamOpts := *opts
 	streamOpts.Format = StreamJSONOutput
+	
+	// Claude CLI requires --verbose when using --output-format=stream-json with --print
+	streamOpts.Verbose = true
 
 	args := buildArgs(prompt, &streamOpts)
 
