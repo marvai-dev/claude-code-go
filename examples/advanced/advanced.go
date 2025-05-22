@@ -26,9 +26,9 @@ func main() {
 	// Create an MCP configuration
 	mcpConfig := MCPConfig{
 		MCPServers: map[string]struct {
-			Command string
-			Args    []string
-			Env     map[string]string
+			Command string            `json:"command"`
+			Args    []string          `json:"args"`
+			Env     map[string]string `json:"env,omitempty"`
 		}{
 			"filesystem": {
 				Command: "npx",

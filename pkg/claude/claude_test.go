@@ -68,7 +68,7 @@ func TestRunPrompt(t *testing.T) {
 	defer func() { execCommand = originalExecCommand }()
 
 	// Test with text output
-	execCommand = mockExecCommand(t, []string{"-p", "Hello, Claude"}, "Hello, human!", 0)
+	execCommand = mockExecCommand(t, []string{"-p", "Hello, Claude", "--output-format", "text"}, "Hello, human!", 0)
 
 	client := &ClaudeClient{BinPath: "claude"}
 	result, err := client.RunPrompt("Hello, Claude", &RunOptions{Format: TextOutput})
@@ -200,7 +200,7 @@ func TestRunFromStdin(t *testing.T) {
 	defer func() { execCommand = origExecCommand }()
 
 	// Test with text input from stdin
-	execCommand = mockCommand(t, []string{"-p"}, "Analyzed your input", 0)
+	execCommand = mockExecCommand(t, []string{"-p", "--output-format", "text"}, "Analyzed your input", 0)
 
 	client := &ClaudeClient{BinPath: "claude"}
 	stdin := bytes.NewBufferString("Code to analyze")
