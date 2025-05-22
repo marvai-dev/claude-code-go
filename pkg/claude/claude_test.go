@@ -38,6 +38,13 @@ func mockExecCommand(t *testing.T, expectedArgs []string, output string, exitCod
 	}
 }
 
+// mockCommand is a helper to mock execCommand in tests. It simply reuses
+// mockExecCommand to create a fake *exec.Cmd that returns the specified
+// output and exit code while verifying the provided arguments.
+func mockCommand(t *testing.T, expectedArgs []string, output string, exitCode int) func(name string, arg ...string) *exec.Cmd {
+	return mockExecCommand(t, expectedArgs, output, exitCode)
+}
+
 // TestHelperProcess isn't a real test - it's used to mock exec.Command
 func TestHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
@@ -189,11 +196,11 @@ func main() {
 }
 
 func TestRunFromStdin(t *testing.T) {
-	origExecCommand := exec.Command
-	defer func() { exec.Command = origExecCommand }()
+	origExecCommand := execCommand
+	defer func() { execCommand = origExecCommand }()
 
 	// Test with text input from stdin
-	exec.Command = mockCommand(t, []string{"-p"}, "Analyzed your input", 0)
+	execCommand = mockCommand(t, []string{"-p"}, "Analyzed your input", 0)
 
 	client := &ClaudeClient{BinPath: "claude"}
 	stdin := bytes.NewBufferString("Code to analyze")
@@ -293,5 +300,36 @@ func TestNewClient(t *testing.T) {
 
 	if client.DefaultOptions.Format != TextOutput {
 		t.Errorf("Expected default format to be %q, got %q", TextOutput, client.DefaultOptions.Format)
+	}
+}
+
+func TestValidateMCPToolName(t *testing.T) {
+	tests := []struct {
+		name  string
+		tool  string
+		valid bool
+	}{
+		{"valid", "mcp__filesystem__list_directory", true},
+		{"invalid_short", "mcp__badtool", false},
+		{"invalid_no_prefix", "filesystem__list_directory", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := validateMCPToolName(tt.tool)
+			if got != tt.valid {
+				t.Errorf("validateMCPToolName(%q) = %v, want %v", tt.tool, got, tt.valid)
+			}
+		})
+	}
+}
+
+func TestValidateMCPTools(t *testing.T) {
+	if err := validateMCPTools([]string{"mcp__filesystem__list_directory", "mcp__github__get_repository"}); err != nil {
+		t.Fatalf("Expected no error for valid tools, got %v", err)
+	}
+
+	if err := validateMCPTools([]string{"mcp__badtool"}); err == nil {
+		t.Fatal("Expected error for malformed tool name, got nil")
 	}
 }

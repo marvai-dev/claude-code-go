@@ -1,3 +1,13 @@
 .env
 .claude/
 ai_docs/
+
+# Build artifacts
+bin/
+build/
+coverage/
+*.out
+
+# Binaries
+claude-go
+*.exe

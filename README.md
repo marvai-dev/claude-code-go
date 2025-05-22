@@ -23,9 +23,9 @@ go get github.com/lancekrogers/claude-code-go
 ## Prerequisites
 
 - **Claude Code CLI**: Must be installed and accessible in your PATH (or specified via the `BinPath` option)
-  - Install from: https://docs.anthropic.com/en/docs/claude-code/getting-started
+  - Install from: <https://docs.anthropic.com/en/docs/claude-code/getting-started>
 - **MCP Servers**: For MCP functionality, the necessary MCP servers must be available
-  - See: https://docs.anthropic.com/en/docs/claude-code/cli-usage#mcp-configuration
+  - See: <https://docs.anthropic.com/en/docs/claude-code/cli-usage#mcp-configuration>
 
 ## Quick Start
 
@@ -33,23 +33,23 @@ go get github.com/lancekrogers/claude-code-go
 package main
 
 import (
-	"fmt"
-	"log"
+ "fmt"
+ "log"
 
-	"github.com/lancekrogers/claude-code-go/internal/claude"
+ "github.com/lancekrogers/claude-code-go/pkg/claude"
 )
 
 func main() {
-	// Create a new Claude client
-	client := claude.NewClient("claude")
+ // Create a new Claude client
+ client := claude.NewClient("claude")
 
-	// Run a simple prompt
-	result, err := client.RunPrompt("Write a function to calculate Fibonacci numbers", nil)
-	if err != nil {
-		log.Fatalf("Error: %v", err)
-	}
+ // Run a simple prompt
+ result, err := client.RunPrompt("Write a function to calculate Fibonacci numbers", nil)
+ if err != nil {
+  log.Fatalf("Error: %v", err)
+ }
 
-	fmt.Println(result.Result)
+ fmt.Println(result.Result)
 }
 ```
 
@@ -60,10 +60,10 @@ func main() {
 ```go
 client := claude.NewClient("claude")
 result, err := client.RunPrompt("Generate a hello world function", &claude.RunOptions{
-	Format: claude.JSONOutput,
+ Format: claude.JSONOutput,
 })
 if err != nil {
-	log.Fatalf("Error: %v", err)
+ log.Fatalf("Error: %v", err)
 }
 
 fmt.Printf("Cost: $%.6f\n", result.CostUSD)
@@ -76,10 +76,10 @@ fmt.Println(result.Result)
 ```go
 client := claude.NewClient("claude")
 result, err := client.RunPrompt("Create a database schema", &claude.RunOptions{
-	SystemPrompt: "You are a database architect. Use PostgreSQL best practices and include proper indexing.",
+ SystemPrompt: "You are a database architect. Use PostgreSQL best practices and include proper indexing.",
 })
 if err != nil {
-	log.Fatalf("Error: %v", err)
+ log.Fatalf("Error: %v", err)
 }
 
 fmt.Println(result.Result)
@@ -91,13 +91,13 @@ fmt.Println(result.Result)
 client := claude.NewClient("claude")
 file, err := os.Open("mycode.go")
 if err != nil {
-	log.Fatalf("Cannot open file: %v", err)
+ log.Fatalf("Cannot open file: %v", err)
 }
 defer file.Close()
 
 result, err := client.RunFromStdin(file, "Review this code for bugs", nil)
 if err != nil {
-	log.Fatalf("Error: %v", err)
+ log.Fatalf("Error: %v", err)
 }
 
 fmt.Println(result.Result)
@@ -113,19 +113,19 @@ messageCh, errCh := client.StreamPrompt(ctx, "Build a React component", &claude.
 
 // Handle errors
 go func() {
-	for err := range errCh {
-		log.Printf("Error: %v", err)
-	}
+ for err := range errCh {
+  log.Printf("Error: %v", err)
+ }
 }()
 
 // Process messages
 for msg := range messageCh {
-	switch msg.Type {
-	case "assistant":
-		fmt.Println("Claude:", msg.Result)
-	case "result":
-		fmt.Printf("Done! Cost: $%.4f\n", msg.CostUSD)
-	}
+ switch msg.Type {
+ case "assistant":
+  fmt.Println("Claude:", msg.Result)
+ case "result":
+  fmt.Printf("Done! Cost: $%.4f\n", msg.CostUSD)
+ }
 }
 ```
 
@@ -134,12 +134,12 @@ for msg := range messageCh {
 ```go
 // Create MCP configuration file
 mcpConfig := map[string]interface{}{
-	"mcpServers": map[string]interface{}{
-		"filesystem": map[string]interface{}{
-			"command": "npx",
-			"args": []string{"-y", "@modelcontextprotocol/server-filesystem", "./"},
-		},
-	},
+ "mcpServers": map[string]interface{}{
+  "filesystem": map[string]interface{}{
+   "command": "npx",
+   "args": []string{"-y", "@modelcontextprotocol/server-filesystem", "./"},
+  },
+ },
 }
 
 // Write to a temporary file
@@ -151,11 +151,11 @@ mcpFile.Close()
 // Run Claude with MCP configuration
 client := claude.NewClient("claude")
 result, err := client.RunPrompt(
-	"List all files in the current directory",
-	&claude.RunOptions{
-		MCPConfigPath: mcpFile.Name(),
-		AllowedTools:  []string{"mcp__filesystem__list_directory"},
-	},
+ "List all files in the current directory",
+ &claude.RunOptions{
+  MCPConfigPath: mcpFile.Name(),
+  AllowedTools:  []string{"mcp__filesystem__list_directory"},
+ },
 )
 ```
 
@@ -166,10 +166,10 @@ client := claude.NewClient("claude")
 
 // First turn
 result, err := client.RunPrompt("Write a function to calculate fibonacci numbers", &claude.RunOptions{
-	Format: claude.JSONOutput,
+ Format: claude.JSONOutput,
 })
 if err != nil {
-	log.Fatalf("Error: %v", err)
+ log.Fatalf("Error: %v", err)
 }
 
 sessionID := result.SessionID
@@ -178,7 +178,7 @@ fmt.Println("First response:", result.Result)
 // Continue the conversation using convenience method
 followup, err := client.ResumeConversation("Now optimize it for better performance", sessionID)
 if err != nil {
-	log.Fatalf("Error: %v", err)
+ log.Fatalf("Error: %v", err)
 }
 
 fmt.Println("Follow-up response:", followup.Result)
@@ -193,15 +193,15 @@ client := claude.NewClient("claude")
 
 // Quick MCP integration
 result, err := client.RunWithMCP(
-	"List files in the project",
-	"mcp-config.json",
-	[]string{"mcp__filesystem__list_directory"},
+ "List files in the project",
+ "mcp-config.json",
+ []string{"mcp__filesystem__list_directory"},
 )
 
 // Custom system prompt
 result, err = client.RunWithSystemPrompt(
-	"Create a REST API",
-	"You are a senior backend engineer. Focus on security and performance.",
+ "Create a REST API",
+ "You are a senior backend engineer. Focus on security and performance.",
 )
 
 // Continue most recent conversation
@@ -218,32 +218,32 @@ result, err = client.ResumeConversation("Add tests", "session-id-123")
 ```go
 // ClaudeClient is the main client for interacting with Claude Code
 type ClaudeClient struct {
-	// BinPath is the path to the Claude Code binary
-	BinPath string
-	// DefaultOptions are the default options to use for all requests
-	DefaultOptions *RunOptions
+ // BinPath is the path to the Claude Code binary
+ BinPath string
+ // DefaultOptions are the default options to use for all requests
+ DefaultOptions *RunOptions
 }
 
 // RunOptions configures how Claude Code is executed
 type RunOptions struct {
-	Format          OutputFormat
-	SystemPrompt    string
-	AppendPrompt    string
-	MCPConfigPath   string
-	AllowedTools    []string
-	DisallowedTools []string
-	PermissionTool  string
-	ResumeID        string
-	Continue        bool
-	MaxTurns        int
-	Verbose         bool
+ Format          OutputFormat
+ SystemPrompt    string
+ AppendPrompt    string
+ MCPConfigPath   string
+ AllowedTools    []string
+ DisallowedTools []string
+ PermissionTool  string
+ ResumeID        string
+ Continue        bool
+ MaxTurns        int
+ Verbose         bool
 }
 
 // Supported output formats
 const (
-	TextOutput       OutputFormat = "text"
-	JSONOutput       OutputFormat = "json"
-	StreamJSONOutput OutputFormat = "stream-json"
+ TextOutput       OutputFormat = "text"
+ JSONOutput       OutputFormat = "json"
+ StreamJSONOutput OutputFormat = "stream-json"
 )
 ```
 
@@ -314,57 +314,57 @@ This SDK is designed to be easily integrated with AI agent frameworks. Here's a 
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
+ "context"
+ "fmt"
+ "log"
 
-	"github.com/lancekrogers/claude-code-go/internal/claude"
-	"github.com/youragentframework/agent"
+ "github.com/lancekrogers/claude-code-go/pkg/claude"
+ "github.com/youragentframework/agent"
 )
 
 // ClaudeAgent implements the Agent interface for your framework
 type ClaudeAgent struct {
-	client *claude.ClaudeClient
-	ctx    context.Context
+ client *claude.ClaudeClient
+ ctx    context.Context
 }
 
 // NewClaudeAgent creates a new Claude agent
 func NewClaudeAgent(ctx context.Context, claudePath string) *ClaudeAgent {
-	return &ClaudeAgent{
-		client: claude.NewClient(claudePath),
-		ctx:    ctx,
-	}
+ return &ClaudeAgent{
+  client: claude.NewClient(claudePath),
+  ctx:    ctx,
+ }
 }
 
 // Execute runs a prompt through Claude Code
 func (a *ClaudeAgent) Execute(prompt string, tools []string) (string, error) {
-	result, err := a.client.RunPrompt(prompt, &claude.RunOptions{
-		AllowedTools: tools,
-		MaxTurns:     10,
-	})
-	if err != nil {
-		return "", err
-	}
-	return result.Result, nil
+ result, err := a.client.RunPrompt(prompt, &claude.RunOptions{
+  AllowedTools: tools,
+  MaxTurns:     10,
+ })
+ if err != nil {
+  return "", err
+ }
+ return result.Result, nil
 }
 
 // Main framework integration
 func main() {
-	ctx := context.Background()
+ ctx := context.Background()
 
-	// Create Claude agent
-	claudeAgent := NewClaudeAgent(ctx, "claude")
+ // Create Claude agent
+ claudeAgent := NewClaudeAgent(ctx, "claude")
 
-	// Register with your agent framework
-	agent.Register("claude-code", claudeAgent)
+ // Register with your agent framework
+ agent.Register("claude-code", claudeAgent)
 
-	// Use the agent
-	result, err := agent.Execute("claude-code", "Build a REST API", []string{"Bash"})
-	if err != nil {
-		log.Fatalf("Error: %v", err)
-	}
+ // Use the agent
+ result, err := agent.Execute("claude-code", "Build a REST API", []string{"Bash"})
+ if err != nil {
+  log.Fatalf("Error: %v", err)
+ }
 
-	fmt.Println(result)
+ fmt.Println(result)
 }
 ```
 
@@ -382,11 +382,11 @@ This Go SDK wraps the official Claude Code CLI. For comprehensive documentation 
 
 We use [Task](https://taskfile.dev/#/installation) to automate common development workflows. Install Task and run these commands in the project root:
 
-| Task         | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `task`       | Build the project and run all tests               |
-| `task build` | Build the CLI binary and Go packages               |
-| `task test`  | Run the full test suite                           |
+| Task         | Description                          |
+| ------------ | ------------------------------------ |
+| `task`       | Build the project and run all tests  |
+| `task build` | Build the CLI binary and Go packages |
+| `task test`  | Run the full test suite              |
 
 ## Contributing
 

@@ -10,12 +10,14 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/lancekrogers/claude-code-go/internal/claude"
+	"github.com/lancekrogers/claude-code-go/pkg/claude"
 )
 
 func main() {
 	// Parse command-line flags
-	printMode := flag.Bool("p", false, "Run in non-interactive print mode")
+	var printMode bool
+	flag.BoolVar(&printMode, "p", false, "Run in non-interactive print mode")
+	flag.BoolVar(&printMode, "print", false, "Run in non-interactive print mode")
 	outputFormat := flag.String("output-format", "", "Output format (text, json, stream-json)")
 	resumeID := flag.String("resume", "", "Resume a conversation by session ID")
 	continueSession := flag.Bool("continue", false, "Continue the most recent conversation")
@@ -33,6 +35,7 @@ func main() {
 
 	// Get prompt from command-line arguments or stdin
 	var prompt string
+	stdinUsedForPrompt := false
 	args := flag.Args()
 
 	if len(args) > 0 {
@@ -48,6 +51,7 @@ func main() {
 				os.Exit(1)
 			}
 			prompt = string(promptBytes)
+			stdinUsedForPrompt = true
 		}
 	}
 
@@ -103,7 +107,7 @@ func main() {
 	}()
 
 	// Execute Claude command
-	if *printMode {
+	if printMode {
 		// Run in non-interactive print mode
 		if opts.Format == claude.StreamJSONOutput {
 			// Handle streaming
@@ -135,9 +139,9 @@ func main() {
 
 			// Check if we're reading from stdin
 			stdinStat, _ := os.Stdin.Stat()
-			if (stdinStat.Mode()&os.ModeCharDevice) == 0 && prompt == "" {
-				// We have data on stdin but no prompt, so use RunFromStdin
-				result, err = client.RunFromStdin(os.Stdin, "", opts)
+			if (stdinStat.Mode()&os.ModeCharDevice) == 0 && !stdinUsedForPrompt {
+				// Data on stdin should be passed through
+				result, err = client.RunFromStdin(os.Stdin, prompt, opts)
 			} else {
 				// Normal prompt execution
 				result, err = client.RunPrompt(prompt, opts)
