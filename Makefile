@@ -18,7 +18,7 @@ RESET := \033[0m
 .DEFAULT_GOAL := help
 
 # Phony targets (not files)
-.PHONY: all build build-lib build-examples build-demo build-dangerous-example
+.PHONY: all build build-lib examples build-examples build-demo build-dangerous-example
 .PHONY: test test-lib test-dangerous test-integration test-integration-real test-local coverage
 .PHONY: demo run-dangerous check-go check-claude
 .PHONY: clean help banner
@@ -34,6 +34,9 @@ build-lib: ## Build the core library
 	@echo "$(BLUE)🔨 Building core library...$(RESET)"
 	@go build ./pkg/claude
 	@echo "$(GREEN)✅ Core library built successfully$(RESET)"
+
+examples: ## Build all example programs (alias)
+	@make build-examples
 
 build-examples: build-demo build-dangerous-example ## Build all example programs
 	@echo "$(BLUE)🔨 Building examples...$(RESET)"
@@ -167,7 +170,7 @@ demo: build-demo check-go check-claude ## Run the interactive Claude Code Go SDK
 	@echo ""
 	@echo "$(BLUE)🎯 Starting interactive demo...$(RESET)"
 	@echo "$(YELLOW)   Type your responses and press Enter$(RESET)"
-	@echo "$(YELLOW)   Press Enter on empty line to exit$(RESET)"
+	@echo "$(YELLOW)   Type 'exit', 'quit', 'bye', or press Enter on empty line to exit$(RESET)"
 	@echo ""
 	@$(BIN_DIR)/demo
 
@@ -184,6 +187,7 @@ clean: ## Clean build artifacts and test cache
 	@echo "$(BLUE)🧹 Cleaning build artifacts...$(RESET)"
 	@rm -rf $(BIN_DIR) $(COVERAGE_DIR)
 	@go clean -testcache
+	@rm -rf it_works/
 	@echo "$(GREEN)✅ Clean completed$(RESET)"
 
 banner: ## Display project banner
@@ -236,9 +240,10 @@ help: ## Display this help message
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage:\n  make $(BLUE)<target>$(RESET)\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  $(BLUE)%-20s$(RESET) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(RESET)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 	@echo ""
 	@echo "$(YELLOW)Quick Start:$(RESET)"
+	@echo "  $(BLUE)make examples$(RESET)                Build all example programs"
+	@echo "  $(BLUE)make demo$(RESET)                     Run interactive demo"
 	@echo "  $(BLUE)make test-local$(RESET)               Run all tests (clean dashboard)"
 	@echo "  $(BLUE)make test-all$(RESET)                 Run tests + coverage (complete dashboard)"
-	@echo "  $(BLUE)make demo$(RESET)                     Run interactive demo"
 	@echo ""
 	@echo "$(YELLOW)Dashboard vs Verbose:$(RESET)"
 	@echo "  $(BLUE)make test-local$(RESET)               Clean dashboard output"

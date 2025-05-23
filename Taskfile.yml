@@ -1,9 +1,9 @@
 # Claude Code Go SDK - Build Pipeline (Task)
 # https://taskfile.dev
-# 
+#
 # Alternative: Use `make <command>` if you prefer Makefiles (see Makefile)
 
-version: '3'
+version: "3"
 
 vars:
   PROJECT_NAME: Claude Code Go SDK
@@ -38,6 +38,7 @@ tasks:
     cmds:
       - rm -rf {{.BIN_DIR}}
       - rm -rf {{.COVERAGE_DIR}}
+      - rm -rf it_works/
       - go clean -cache -testcache
       - mkdir -p {{.BIN_DIR}} {{.COVERAGE_DIR}}
 
@@ -62,6 +63,12 @@ tasks:
       - echo "🔨 Building core library..."
       - go build ./pkg/claude
       - echo "✅ Core library built successfully"
+
+  examples:
+    desc: "Build all example programs (alias)"
+    aliases: [build-examples]
+    cmds:
+      - task: build-examples
 
   build-examples:
     desc: "Build example programs"
@@ -128,16 +135,16 @@ tasks:
             echo "❌ Error: Go is not installed or not in PATH"
             exit 1
         fi
-        
+
         go_version=$(go version | awk '{print $3}' | sed 's/go//')
         major_version=$(echo $go_version | cut -d. -f1)
         minor_version=$(echo $go_version | cut -d. -f2)
-        
+
         if [[ $major_version -lt 1 ]] || [[ $major_version -eq 1 && $minor_version -lt 20 ]]; then
             echo "❌ Error: Go ≥1.20 is required (found: $go_version)"
             exit 1
         fi
-        
+
         echo "✔️  Go version: $go_version"
       - |
         # Check for claude CLI
@@ -146,7 +153,7 @@ tasks:
             echo "   Please install from: https://docs.anthropic.com/en/docs/claude-code/getting-started"
             exit 1
         fi
-        
+
         echo "✔️  Found claude CLI: $claude_path"
       - echo ""
       - echo "🎯 Starting interactive demo..."
@@ -168,13 +175,13 @@ tasks:
             echo "   export CLAUDE_ENABLE_DANGEROUS=\"i-accept-all-risks\""
             exit 1
         fi
-        
+
         # Check not in production
         if [ "$NODE_ENV" = "production" ] || [ "$GO_ENV" = "production" ] || [ "$ENVIRONMENT" = "production" ]; then
             echo "❌ Error: Cannot run dangerous example in production environment"
             exit 1
         fi
-        
+
         echo "✔️  Security requirements met"
       - echo ""
       - "{{.BIN_DIR}}/dangerous-example"
@@ -356,3 +363,4 @@ tasks:
       - echo "✅ Test environment setup complete"
       - echo "📝 Edit .env.test to configure your testing environment"
       - echo "💡 Claude Code CLI will handle authentication automatically when needed"
+
