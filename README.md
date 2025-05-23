@@ -1,4 +1,11 @@
+<p align="left">
+  <img src="docs/assets/logo.svg" alt="Claude Code Go SDK" height="90">
+</p>
+
 # Claude Code Go SDK
+
+[![CI](https://github.com/youruser/claude-code-go/actions/workflows/ci.yml/badge.svg)](…) ·
+[![Go Reference](https://pkg.go.dev/badge/github.com/youruser/claude-code-go.svg)](https://pkg.go.dev/…)
 
 A Go library for programmatically integrating the [Claude Code Command Line Interface](https://docs.anthropic.com/en/docs/claude-code) into Go applications. This SDK provides a Go-native interface to all Claude Code CLI features, enabling you to build AI-powered applications that leverage Claude's coding capabilities.
 
@@ -58,23 +65,23 @@ The **streaming demo** shows Claude's actions in real-time with tool execution v
 package main
 
 import (
-	"fmt"
-	"log"
+ "fmt"
+ "log"
 
-	"github.com/lancekrogers/claude-code-go/pkg/claude"
+ "github.com/lancekrogers/claude-code-go/pkg/claude"
 )
 
 func main() {
-	// Create a new Claude client
-	client := claude.NewClient("claude")
+ // Create a new Claude client
+ client := claude.NewClient("claude")
 
-	// Run a simple prompt
-	result, err := client.RunPrompt("Write a function to calculate Fibonacci numbers", nil)
-	if err != nil {
-		log.Fatalf("Error: %v", err)
-	}
+ // Run a simple prompt
+ result, err := client.RunPrompt("Write a function to calculate Fibonacci numbers", nil)
+ if err != nil {
+  log.Fatalf("Error: %v", err)
+ }
 
-	fmt.Println(result.Result)
+ fmt.Println(result.Result)
 }
 ```
 
@@ -85,10 +92,10 @@ func main() {
 ```go
 client := claude.NewClient("claude")
 result, err := client.RunPrompt("Generate a hello world function", &claude.RunOptions{
-	Format: claude.JSONOutput,
+ Format: claude.JSONOutput,
 })
 if err != nil {
-	log.Fatalf("Error: %v", err)
+ log.Fatalf("Error: %v", err)
 }
 
 fmt.Printf("Cost: $%.6f\n", result.CostUSD)
@@ -100,7 +107,7 @@ fmt.Println(result.Result)
 
 ```go
 result, err := client.RunPrompt("Create a database schema", &claude.RunOptions{
-	SystemPrompt: "You are a database architect. Use PostgreSQL best practices.",
+ SystemPrompt: "You are a database architect. Use PostgreSQL best practices.",
 })
 ```
 
@@ -109,13 +116,13 @@ result, err := client.RunPrompt("Create a database schema", &claude.RunOptions{
 ```go
 file, err := os.Open("mycode.go")
 if err != nil {
-	log.Fatalf("Cannot open file: %v", err)
+ log.Fatalf("Cannot open file: %v", err)
 }
 defer file.Close()
 
 result, err := client.RunFromStdin(file, "Review this code for bugs", nil)
 if err != nil {
-	log.Fatalf("Error: %v", err)
+ log.Fatalf("Error: %v", err)
 }
 
 fmt.Println(result.Result)
@@ -129,19 +136,19 @@ messageCh, errCh := client.StreamPrompt(ctx, "Build a React component", &claude.
 
 // Handle errors
 go func() {
-	for err := range errCh {
-		log.Printf("Error: %v", err)
-	}
+ for err := range errCh {
+  log.Printf("Error: %v", err)
+ }
 }()
 
 // Process messages
 for msg := range messageCh {
-	switch msg.Type {
-	case "assistant":
-		fmt.Println("Claude:", msg.Result)
-	case "result":
-		fmt.Printf("Done! Cost: $%.4f\n", msg.CostUSD)
-	}
+ switch msg.Type {
+ case "assistant":
+  fmt.Println("Claude:", msg.Result)
+ case "result":
+  fmt.Printf("Done! Cost: $%.4f\n", msg.CostUSD)
+ }
 }
 ```
 
@@ -150,12 +157,12 @@ for msg := range messageCh {
 ```go
 // Create MCP configuration
 mcpConfig := map[string]interface{}{
-	"mcpServers": map[string]interface{}{
-		"filesystem": map[string]interface{}{
-			"command": "npx",
-			"args": []string{"-y", "@modelcontextprotocol/server-filesystem", "./"},
-		},
-	},
+ "mcpServers": map[string]interface{}{
+  "filesystem": map[string]interface{}{
+   "command": "npx",
+   "args": []string{"-y", "@modelcontextprotocol/server-filesystem", "./"},
+  },
+ },
 }
 
 // Write to temporary file
@@ -166,11 +173,11 @@ mcpFile.Close()
 
 // Run with MCP tools
 result, err := client.RunPrompt(
-	"List all files in the current directory",
-	&claude.RunOptions{
-		MCPConfigPath: mcpFile.Name(),
-		AllowedTools:  []string{"mcp__filesystem__list_directory"},
-	},
+ "List all files in the current directory",
+ &claude.RunOptions{
+  MCPConfigPath: mcpFile.Name(),
+  AllowedTools:  []string{"mcp__filesystem__list_directory"},
+ },
 )
 ```
 
@@ -179,7 +186,7 @@ result, err := client.RunPrompt(
 ```go
 // First turn
 result, err := client.RunPrompt("Write a fibonacci function", &claude.RunOptions{
-	Format: claude.JSONOutput,
+ Format: claude.JSONOutput,
 })
 
 sessionID := result.SessionID
@@ -193,16 +200,16 @@ followup, err := client.ResumeConversation("Now optimize it for performance", se
 ```go
 // Quick MCP integration
 result, err := client.RunWithMCP(
-	"List files in the project",
-	"mcp-config.json",
-	[]string{"mcp__filesystem__list_directory"},
+ "List files in the project",
+ "mcp-config.json",
+ []string{"mcp__filesystem__list_directory"},
 )
 
 // Custom system prompt
 result, err = client.RunWithSystemPrompt(
-	"Create a REST API",
-	"You are a senior backend engineer",
-	nil,
+ "Create a REST API",
+ "You are a senior backend engineer",
+ nil,
 )
 
 // Continue most recent conversation
@@ -216,30 +223,30 @@ result, err = client.ContinueConversation("Add error handling to the code")
 ```go
 // ClaudeClient is the main client for interacting with Claude Code
 type ClaudeClient struct {
-	BinPath        string
-	DefaultOptions *RunOptions
+ BinPath        string
+ DefaultOptions *RunOptions
 }
 
 // RunOptions configures how Claude Code is executed
 type RunOptions struct {
-	Format          OutputFormat
-	SystemPrompt    string
-	AppendPrompt    string
-	MCPConfigPath   string
-	AllowedTools    []string
-	DisallowedTools []string
-	PermissionTool  string
-	ResumeID        string
-	Continue        bool
-	MaxTurns        int
-	Verbose         bool
+ Format          OutputFormat
+ SystemPrompt    string
+ AppendPrompt    string
+ MCPConfigPath   string
+ AllowedTools    []string
+ DisallowedTools []string
+ PermissionTool  string
+ ResumeID        string
+ Continue        bool
+ MaxTurns        int
+ Verbose         bool
 }
 
 // Output formats
 const (
-	TextOutput       OutputFormat = "text"
-	JSONOutput       OutputFormat = "json"
-	StreamJSONOutput OutputFormat = "stream-json"
+ TextOutput       OutputFormat = "text"
+ JSONOutput       OutputFormat = "json"
+ StreamJSONOutput OutputFormat = "stream-json"
 )
 ```
 
@@ -301,6 +308,7 @@ err = client.ENABLE_MCP_DEBUG()
 ```
 
 **⚠️ Security Requirements:**
+
 - Must set `CLAUDE_ENABLE_DANGEROUS="i-accept-all-risks"`
 - Cannot be used in production environments
 - Requires explicit security review and justification
@@ -313,26 +321,26 @@ This SDK is designed for easy integration with AI agent frameworks:
 
 ```go
 type ClaudeAgent struct {
-	client *claude.ClaudeClient
-	ctx    context.Context
+ client *claude.ClaudeClient
+ ctx    context.Context
 }
 
 func NewClaudeAgent(ctx context.Context) *ClaudeAgent {
-	return &ClaudeAgent{
-		client: claude.NewClient("claude"),
-		ctx:    ctx,
-	}
+ return &ClaudeAgent{
+  client: claude.NewClient("claude"),
+  ctx:    ctx,
+ }
 }
 
 func (a *ClaudeAgent) Execute(prompt string, tools []string) (string, error) {
-	result, err := a.client.RunPrompt(prompt, &claude.RunOptions{
-		AllowedTools: tools,
-		MaxTurns:     10,
-	})
-	if err != nil {
-		return "", err
-	}
-	return result.Result, nil
+ result, err := a.client.RunPrompt(prompt, &claude.RunOptions{
+  AllowedTools: tools,
+  MaxTurns:     10,
+ })
+ if err != nil {
+  return "", err
+ }
+ return result.Result, nil
 }
 ```
 
@@ -344,7 +352,7 @@ The SDK includes comprehensive testing with both unit tests and integration test
 # Run unit tests
 make test              # or: task test
 
-# Run dangerous package tests  
+# Run dangerous package tests
 make test-dangerous    # or: task test-dangerous
 
 # Run integration tests with mock server
@@ -379,14 +387,16 @@ This Go SDK wraps the official Claude Code CLI. For comprehensive documentation:
 We provide both [Task](https://taskfile.dev) and Make for development automation. Use whichever you prefer:
 
 ### Using Make (traditional)
+
 ```bash
 make help          # Show all available commands
-make build         # Build the SDK and examples  
+make build         # Build the SDK and examples
 make demo          # Run interactive demo
 make test coverage # Run tests and generate coverage
 ```
 
 ### Using Task (modern alternative)
+
 ```bash
 task --list        # Show all available commands
 task build         # Build the SDK and examples
@@ -411,21 +421,21 @@ go build ./examples/advanced
 
 ### Available Commands
 
-| Make Command                 | Task Command                 | Description                            |
-| ---------------------------- | ---------------------------- | -------------------------------------- |
-| `make all`                   | `task`                       | Build and test the SDK                 |
-| `make build-lib`             | `task build-lib`             | Build the core library                 |
-| `make build-examples`        | `task build-examples`        | Build all example programs to `bin/`   |
-| `make build-basic`           | `task build-basic`           | Build basic example to `bin/`          |
-| `make build-advanced`        | `task build-advanced`        | Build advanced example to `bin/`       |
-| `make demo`                  | `task demo`                  | Run the interactive demo               |
-| `make run-dangerous`         | `task run-dangerous`         | Run dangerous features example         |
-| `make test`                  | `task test`                  | Run unit tests                         |
-| `make test-dangerous`        | `task test-dangerous`        | Run dangerous package tests            |
-| `make test-integration`      | `task test-integration`      | Run integration tests (mock)           |
-| `make test-integration-real` | `task test-integration-real` | Run integration tests (real Claude)    |
-| `make coverage`              | `task coverage`              | Generate coverage report               |
-| `make clean`                 | `task clean`                 | Clean build artifacts                  |
+| Make Command                 | Task Command                 | Description                          |
+| ---------------------------- | ---------------------------- | ------------------------------------ |
+| `make all`                   | `task`                       | Build and test the SDK               |
+| `make build-lib`             | `task build-lib`             | Build the core library               |
+| `make build-examples`        | `task build-examples`        | Build all example programs to `bin/` |
+| `make build-basic`           | `task build-basic`           | Build basic example to `bin/`        |
+| `make build-advanced`        | `task build-advanced`        | Build advanced example to `bin/`     |
+| `make demo`                  | `task demo`                  | Run the interactive demo             |
+| `make run-dangerous`         | `task run-dangerous`         | Run dangerous features example       |
+| `make test`                  | `task test`                  | Run unit tests                       |
+| `make test-dangerous`        | `task test-dangerous`        | Run dangerous package tests          |
+| `make test-integration`      | `task test-integration`      | Run integration tests (mock)         |
+| `make test-integration-real` | `task test-integration-real` | Run integration tests (real Claude)  |
+| `make coverage`              | `task coverage`              | Generate coverage report             |
+| `make clean`                 | `task clean`                 | Clean build artifacts                |
 
 ## Project Architecture
 
@@ -445,3 +455,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Anthropic for creating Claude Code
 - The Go community for excellent tooling and testing support
+
