@@ -1,11 +1,11 @@
-<p align="left">
-  <img src="docs/assets/logo.svg" alt="Claude Code Go SDK" height="90">
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Claude Code Go SDK" height="90">
 </p>
 
 # Claude Code Go SDK
 
-[![CI](https://github.com/youruser/claude-code-go/actions/workflows/ci.yml/badge.svg)](…) ·
-[![Go Reference](https://pkg.go.dev/badge/github.com/youruser/claude-code-go.svg)](https://pkg.go.dev/…)
+[![CI](https://github.com/lancekrogers/claude-code-go/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/lancekrogers/claude-code-go/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/lancekrogers/claude-code-go.svg)](https://pkg.go.dev/…)
 
 A Go library for programmatically integrating the [Claude Code Command Line Interface](https://docs.anthropic.com/en/docs/claude-code) into Go applications. This SDK provides a Go-native interface to all Claude Code CLI features, enabling you to build AI-powered applications that leverage Claude's coding capabilities.
 
@@ -455,4 +455,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Anthropic for creating Claude Code
 - The Go community for excellent tooling and testing support
-
