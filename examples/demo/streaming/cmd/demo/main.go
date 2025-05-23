@@ -96,7 +96,10 @@ const systemPrompt = `
 You are a senior Go engineer with cryptocurrency experience interviewing
 for a job. Create an it_works/ directory, then copy examples/demo/streaming/test-file.txt 
 into it_works/test-file.txt. Create a Go program in it_works/keccac.go that prints
-the Keccak hash of a file (go run keccak.go <file>). Use Go's built-in crypto/sha3 package with sha3.New256() - this is Keccac, not SHA-256. After writing the code, cd into it_works/ and test it by generating the hash of 
+the Keccak hash of a file (go run keccak.go <file>). Use Go's built-in crypto/sha3 package (import "crypto/sha3") with sha3.New256() - this is Keccac, not SHA-256. 
+Do NOT use golang.org/x/crypto/sha3 or external libraries. IMPORTANT: Only work within the it_works/ 
+directory - do NOT modify any files outside it_works/ including go.work, go.mod, or other project files. 
+After writing the code, cd into it_works/ and test it by generating the hash of 
 test-file.txt and ../README.md to demonstrate it works. Briefly explain your
 approach in one short paragraph (≤3 sentences, no bullet points), then ask the
 interviewer if they would like you to start coding.`
@@ -116,18 +119,19 @@ func main() {
 			Format: claude.StreamJSONOutput,
 			SystemPrompt: systemPrompt,
 			AllowedTools: []string{
-				"Write",       // Create new files
-				"Edit",        // Modify existing files
-				"Read",        // Read file contents
-				"Bash(mkdir)", // Create directories
-				"Bash(chmod)", // Make files executable
-				"Bash(go:*)",  // Run Go programs and build binaries
-				"Bash(ls)",    // List directory contents
-				"Bash(cat)",   // Display file contents
-				"Bash(echo)",  // Create simple test content
-				"Bash(pwd)",   // Show current directory
-				"Bash(cp)",    // Copy files
-				"Bash(cd)",    // Change directory
+				"Write(it_works/*)",           // Create files only in it_works/
+				"Edit(it_works/*)",            // Edit files only in it_works/
+				"Read(it_works/*)",            // Read files only in it_works/
+				"Read(examples/demo/streaming/test-file.txt)", // Read source test file
+				"Bash(mkdir it_works*)",       // Create it_works directory only
+				"Bash(chmod it_works/*)",      // Make files executable in it_works/
+				"Bash(cd it_works*)",          // Change to it_works directory only
+				"Bash(cp examples/demo/streaming/test-file.txt it_works/)", // Copy test file to it_works/
+				"Bash(go:* it_works/*)",       // Run Go commands in it_works/
+				"Bash(ls it_works*)",          // List it_works contents
+				"Bash(cat it_works/*)",        // Display it_works files
+				"Bash(echo)",                  // Create simple test content
+				"Bash(pwd)",                   // Show current directory
 			},
 		})
 
@@ -182,18 +186,19 @@ repl:
 			Format:   claude.StreamJSONOutput,
 			ResumeID: sessionID,
 			AllowedTools: []string{
-				"Write",       // Create new files
-				"Edit",        // Modify existing files
-				"Read",        // Read file contents
-				"Bash(mkdir)", // Create directories
-				"Bash(chmod)", // Make files executable
-				"Bash(go:*)",  // Run Go programs and build binaries
-				"Bash(ls)",    // List directory contents
-				"Bash(cat)",   // Display file contents
-				"Bash(echo)",  // Create simple test content
-				"Bash(pwd)",   // Show current directory
-				"Bash(cp)",    // Copy files
-				"Bash(cd)",    // Change directory
+				"Write(it_works/*)",           // Create files only in it_works/
+				"Edit(it_works/*)",            // Edit files only in it_works/
+				"Read(it_works/*)",            // Read files only in it_works/
+				"Read(examples/demo/streaming/test-file.txt)", // Read source test file
+				"Bash(mkdir it_works*)",       // Create it_works directory only
+				"Bash(chmod it_works/*)",      // Make files executable in it_works/
+				"Bash(cd it_works*)",          // Change to it_works directory only
+				"Bash(cp examples/demo/streaming/test-file.txt it_works/)", // Copy test file to it_works/
+				"Bash(go:* it_works/*)",       // Run Go commands in it_works/
+				"Bash(ls it_works*)",          // List it_works contents
+				"Bash(cat it_works/*)",        // Display it_works files
+				"Bash(echo)",                  // Create simple test content
+				"Bash(pwd)",                   // Show current directory
 			},
 		})
 
