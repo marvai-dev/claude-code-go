@@ -1,4 +1,4 @@
-<p align="center">
+<p align="left">
   <img src="docs/assets/logo.png" alt="Claude Code Go SDK" height="90">
 </p>
 
