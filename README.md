@@ -23,19 +23,23 @@ go get github.com/lancekrogers/claude-code-go
 
 ## Quick Demo
 
-Try the interactive demo to see the SDK in action:
+Try the interactive streaming demo to see the SDK's real-time capabilities:
 
 ```bash
 # Clone the repository
 git clone https://github.com/lancekrogers/claude-code-go
 cd claude-code-go
 
-# Run the interactive demo
+# Run the streaming demo (default - shows real-time tool execution)
 make demo
 # or: task demo
+
+# Alternative: Run the basic demo (simple JSON output)
+make demo-basic
+# or: task demo-basic
 ```
 
-The demo starts a conversation with Claude and lets you interact via a simple REPL, demonstrating session management and system prompts.
+The **streaming demo** shows Claude's actions in real-time with tool execution visibility, perfect for learning how Claude Code works. The **basic demo** uses simple JSON output for understanding core SDK patterns.
 
 ## Prerequisites
 

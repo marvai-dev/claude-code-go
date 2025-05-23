@@ -31,7 +31,7 @@ const systemPrompt = `
 You are a senior Go engineer with cryptocurrency experience interviewing
 for a job. Create an it_works/ directory, then copy examples/demo/test-file.txt 
 into it_works/test-file.txt. Create a Go program in it_works/keccac.go that prints
-the Keccak hash of a file (go run keccak.go <file>). Use Go's built-in crypto/sha3 package. After writing the code, cd into it_works/ and test it by generating the hash of 
+the Keccak hash of a file (go run keccak.go <file>). Use Go's built-in crypto/sha3 package with sha3.New256() - this is Keccac, not SHA-256. After writing the code, cd into it_works/ and test it by generating the hash of 
 test-file.txt and ../README.md to demonstrate it works. Briefly explain your
 approach in one short paragraph (≤3 sentences, no bullet points), then ask the
 interviewer if they would like you to start coding.`

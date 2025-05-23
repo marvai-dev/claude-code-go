@@ -78,20 +78,36 @@ tasks:
       - go build -o {{.BIN_DIR}}/basic-example ./examples/basic || echo "❌ Basic example build failed"
       - go build -o {{.BIN_DIR}}/advanced-example ./examples/advanced || echo "❌ Advanced example build failed"
       - go build -o {{.BIN_DIR}}/testing-example ./examples/testing || echo "❌ Testing example build failed"
-      - task: build-demo
+      - task: build-demo-streaming
+      - task: build-demo-basic
       - task: build-dangerous-example
       - echo "✅ Example builds completed"
 
   build-demo:
-    desc: "Build the interactive demo"
+    desc: "Build the interactive demo (streaming)"
+    deps: [build-demo-streaming]
+
+  build-demo-streaming:
+    desc: "Build the streaming demo"
     cmds:
-      - echo "🔨 Building demo..."
+      - echo "🔨 Building streaming demo..."
       - mkdir -p {{.BIN_DIR}}
       - |
-        cd examples/demo
+        cd examples/demo/streaming
         go mod tidy
-        go build -o ../../{{.BIN_DIR}}/demo ./cmd/demo
-      - echo "✅ Demo built successfully"
+        go build -o ../../../{{.BIN_DIR}}/demo ./cmd/demo
+      - echo "✅ Streaming demo built successfully"
+
+  build-demo-basic:
+    desc: "Build the basic demo"
+    cmds:
+      - echo "🔨 Building basic demo..."
+      - mkdir -p {{.BIN_DIR}}
+      - |
+        cd examples/demo/basic
+        go mod tidy
+        go build -o ../../../{{.BIN_DIR}}/demo-basic ./cmd/demo
+      - echo "✅ Basic demo built successfully"
 
   build-dangerous-example:
     desc: "Build dangerous usage example"
@@ -124,11 +140,11 @@ tasks:
       - echo "✅ Dangerous package tests completed (check for errors above)"
 
   demo:
-    desc: "Run the interactive Claude Code Go SDK demo"
-    deps: [build-demo]
+    desc: "Run the interactive Claude Code Go SDK demo (streaming)"
+    deps: [build-demo-streaming]
     cmds:
-      - echo "🚀 Claude Code Go SDK Demo"
-      - echo "=========================="
+      - echo "🚀 Claude Code Go SDK Demo (Streaming)"
+      - echo "====================================="
       - |
         # Check Go version
         if ! command -v go &> /dev/null; then
@@ -156,11 +172,56 @@ tasks:
 
         echo "✔️  Found claude CLI: $claude_path"
       - echo ""
-      - echo "🎯 Starting interactive demo..."
+      - echo "🎯 Starting streaming demo with real-time tool display..."
       - echo "   Type your responses and press Enter"
-      - echo "   Press Enter on empty line to exit"
+      - echo "   Type 'exit', 'quit', 'bye', or press Enter on empty line to exit"
       - echo ""
       - "{{.BIN_DIR}}/demo"
+
+  demo-streaming:
+    desc: "Run the streaming demo"
+    deps: [build-demo-streaming]
+    cmds:
+      - task: demo
+
+  demo-basic:
+    desc: "Run the basic demo"
+    deps: [build-demo-basic]
+    cmds:
+      - echo "🚀 Claude Code Go SDK Demo (Basic)"
+      - echo "================================"
+      - |
+        # Check Go version
+        if ! command -v go &> /dev/null; then
+            echo "❌ Error: Go is not installed or not in PATH"
+            exit 1
+        fi
+
+        go_version=$(go version | awk '{print $3}' | sed 's/go//')
+        major_version=$(echo $go_version | cut -d. -f1)
+        minor_version=$(echo $go_version | cut -d. -f2)
+
+        if [[ $major_version -lt 1 ]] || [[ $major_version -eq 1 && $minor_version -lt 20 ]]; then
+            echo "❌ Error: Go ≥1.20 is required (found: $go_version)"
+            exit 1
+        fi
+
+        echo "✔️  Go version: $go_version"
+      - |
+        # Check for claude CLI
+        if ! claude_path=$(command -v claude 2>/dev/null); then
+            echo "❌ Error: claude CLI not found in PATH"
+            echo "   Please install from: https://docs.anthropic.com/en/docs/claude-code/getting-started"
+            exit 1
+        fi
+
+        echo "✔️  Found claude CLI: $claude_path"
+      - echo ""
+      - echo "🎯 Starting basic demo with simple JSON output..."
+      - echo "   Type your responses and press Enter"
+      - echo "   Type 'exit', 'quit', 'bye', or press Enter on empty line to exit"
+      - echo ""
+      - "{{.BIN_DIR}}/demo-basic"
 
   run-dangerous:
     desc: "Run dangerous features example (development only)"

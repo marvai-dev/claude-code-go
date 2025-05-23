@@ -18,9 +18,9 @@ RESET := \033[0m
 .DEFAULT_GOAL := help
 
 # Phony targets (not files)
-.PHONY: all build build-lib examples build-examples build-demo build-dangerous-example
+.PHONY: all build build-lib examples build-examples build-demo build-demo-streaming build-demo-basic build-dangerous-example
 .PHONY: test test-lib test-dangerous test-integration test-integration-real test-local coverage
-.PHONY: demo run-dangerous check-go check-claude
+.PHONY: demo demo-streaming demo-basic run-dangerous check-go check-claude
 .PHONY: clean help banner
 
 ##@ Build Targets
@@ -38,7 +38,7 @@ build-lib: ## Build the core library
 examples: ## Build all example programs (alias)
 	@make build-examples
 
-build-examples: build-demo build-dangerous-example ## Build all example programs
+build-examples: build-demo-streaming build-demo-basic build-dangerous-example ## Build all example programs
 	@echo "$(BLUE)🔨 Building examples...$(RESET)"
 	@mkdir -p $(BIN_DIR)
 	@go build -o $(BIN_DIR)/basic-example ./examples/basic || echo "$(RED)❌ Basic example build failed$(RESET)"
@@ -46,11 +46,19 @@ build-examples: build-demo build-dangerous-example ## Build all example programs
 	@go build -o $(BIN_DIR)/testing-example ./examples/testing || echo "$(RED)❌ Testing example build failed$(RESET)"
 	@echo "$(GREEN)✅ Example builds completed$(RESET)"
 
-build-demo: ## Build the interactive demo
-	@echo "$(BLUE)🔨 Building demo...$(RESET)"
+build-demo: build-demo-streaming ## Build the interactive demo (streaming)
+
+build-demo-streaming: ## Build the streaming demo
+	@echo "$(BLUE)🔨 Building streaming demo...$(RESET)"
 	@mkdir -p $(BIN_DIR)
-	@cd examples/demo && go mod tidy && go build -o ../../$(BIN_DIR)/demo ./cmd/demo
-	@echo "$(GREEN)✅ Demo built successfully$(RESET)"
+	@cd examples/demo/streaming && go mod tidy && go build -o ../../../$(BIN_DIR)/demo ./cmd/demo
+	@echo "$(GREEN)✅ Streaming demo built successfully$(RESET)"
+
+build-demo-basic: ## Build the basic demo
+	@echo "$(BLUE)🔨 Building basic demo...$(RESET)"
+	@mkdir -p $(BIN_DIR)
+	@cd examples/demo/basic && go mod tidy && go build -o ../../../$(BIN_DIR)/demo-basic ./cmd/demo
+	@echo "$(GREEN)✅ Basic demo built successfully$(RESET)"
 
 build-dangerous-example: ## Build dangerous usage example
 	@echo "$(BLUE)🔨 Building dangerous example...$(RESET)"
@@ -164,15 +172,27 @@ coverage-verbose: ## Generate test coverage report (verbose mode)
 
 ##@ Demo and Examples
 
-demo: build-demo check-go check-claude ## Run the interactive Claude Code Go SDK demo
-	@echo "$(BLUE)🚀 Claude Code Go SDK Demo$(RESET)"
-	@echo "$(BLUE)===========================$(RESET)"
+demo: demo-streaming ## Run the interactive Claude Code Go SDK demo (streaming)
+
+demo-streaming: build-demo-streaming check-go check-claude ## Run the streaming demo
+	@echo "$(BLUE)🚀 Claude Code Go SDK Demo (Streaming)$(RESET)"
+	@echo "$(BLUE)=====================================$(RESET)"
 	@echo ""
-	@echo "$(BLUE)🎯 Starting interactive demo...$(RESET)"
+	@echo "$(BLUE)🎯 Starting streaming demo with real-time tool display...$(RESET)"
 	@echo "$(YELLOW)   Type your responses and press Enter$(RESET)"
 	@echo "$(YELLOW)   Type 'exit', 'quit', 'bye', or press Enter on empty line to exit$(RESET)"
 	@echo ""
 	@$(BIN_DIR)/demo
+
+demo-basic: build-demo-basic check-go check-claude ## Run the basic demo
+	@echo "$(BLUE)🚀 Claude Code Go SDK Demo (Basic)$(RESET)"
+	@echo "$(BLUE)=================================$(RESET)"
+	@echo ""
+	@echo "$(BLUE)🎯 Starting basic demo with simple JSON output...$(RESET)"
+	@echo "$(YELLOW)   Type your responses and press Enter$(RESET)"
+	@echo "$(YELLOW)   Type 'exit', 'quit', 'bye', or press Enter on empty line to exit$(RESET)"
+	@echo ""
+	@$(BIN_DIR)/demo-basic
 
 run-dangerous: build-dangerous-example check-dangerous ## Run dangerous features example (development only)
 	@echo "$(YELLOW)🚨 Running Dangerous Features Example$(RESET)"

@@ -32,6 +32,8 @@ The demo showcases Claude Code Go SDK by having Claude:
 
 For `it_works/test-file.txt`: `14cc70b04a44bb7cc18ee779c386549ed10058a62c7e7875ff2baf0e3ffdbd4e`
 
+**Note**: The demo specifically uses Keccac (via `crypto/sha3.New256()`), not SHA-256. Go's `crypto/sha3` package implements the Keccac algorithm used in Ethereum and other cryptocurrencies.
+
 ## Key Benefits
 
 - ✅ **Zero setup** - Uses Go's built-in crypto/sha3
