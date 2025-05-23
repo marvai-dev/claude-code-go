@@ -441,11 +441,9 @@ go build ./examples/advanced
 
 This project is designed as a **Go SDK library** for wrapping the Claude Code CLI. It does not provide its own CLI - users should import the library into their Go applications.
 
-See [CLAUDE.md](CLAUDE.md) for detailed architectural decisions and development guidelines.
-
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see our [Contributing Guide](docs/CONTRIBUTING.md) for details on how to get started.
 
 ## License
 
