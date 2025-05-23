@@ -89,7 +89,7 @@ func (c *DangerousClient) SET_ENVIRONMENT_VARIABLES(envVars map[string]string) e
 	}
 
 	// Validate environment variables for obvious security risks
-	for key, _ := range envVars {
+	for key := range envVars {
 		if strings.Contains(strings.ToUpper(key), "PASSWORD") ||
 			strings.Contains(strings.ToUpper(key), "SECRET") ||
 			strings.Contains(strings.ToUpper(key), "TOKEN") ||

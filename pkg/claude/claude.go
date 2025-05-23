@@ -176,7 +176,7 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 	// Force stream-json format for streaming
 	streamOpts := *opts
 	streamOpts.Format = StreamJSONOutput
-	
+
 	// Claude CLI requires --verbose when using --output-format=stream-json with --print
 	streamOpts.Verbose = true
 
@@ -188,23 +188,6 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 
 		// Create a custom command that supports context
 		cmd := execCommand(ctx, c.BinPath, args...)
-
-		// Set up a channel to handle context cancellation
-		doneCh := make(chan struct{})
-		go func() {
-			select {
-			case <-ctx.Done():
-				// Try to kill the process if context is canceled
-				if cmd.Process != nil {
-					_ = cmd.Process.Kill()
-				}
-			case <-doneCh:
-				// Context not canceled, command completed normally
-			}
-		}()
-
-		// When we're done with the command, signal the goroutine above
-		defer close(doneCh)
 
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
@@ -249,7 +232,6 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 				// Message sent successfully
 			case <-ctx.Done():
 				// Context was canceled
-				_ = cmd.Process.Kill()
 				errCh <- ctx.Err()
 				return
 			}
@@ -390,11 +372,11 @@ func (c *ClaudeClient) RunWithSystemPromptCtx(ctx context.Context, prompt string
 	if opts == nil {
 		opts = &RunOptions{}
 	}
-	
+
 	// Create a copy to avoid modifying the original
 	runOpts := *opts
 	runOpts.SystemPrompt = systemPrompt
-	
+
 	return c.RunPromptCtx(ctx, prompt, &runOpts)
 }
 
