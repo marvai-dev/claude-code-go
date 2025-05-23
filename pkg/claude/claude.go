@@ -366,10 +366,16 @@ func (c *ClaudeClient) RunWithMCP(prompt string, mcpConfigPath string, allowedTo
 }
 
 // RunWithSystemPrompt is a convenience method for running Claude with a custom system prompt
-func (c *ClaudeClient) RunWithSystemPrompt(prompt string, systemPrompt string) (*ClaudeResult, error) {
-	return c.RunPrompt(prompt, &RunOptions{
-		SystemPrompt: systemPrompt,
-	})
+func (c *ClaudeClient) RunWithSystemPrompt(prompt string, systemPrompt string, opts *RunOptions) (*ClaudeResult, error) {
+	if opts == nil {
+		opts = &RunOptions{}
+	}
+	
+	// Create a copy to avoid modifying the original
+	runOpts := *opts
+	runOpts.SystemPrompt = systemPrompt
+	
+	return c.RunPrompt(prompt, &runOpts)
 }
 
 // ContinueConversation is a convenience method for continuing the most recent conversation

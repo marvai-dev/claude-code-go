@@ -1,6 +1,7 @@
 .env
 .claude/
 ai_docs/
+it_works/
 
 # Build artifacts
 bin/

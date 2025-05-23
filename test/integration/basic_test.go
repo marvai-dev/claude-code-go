@@ -73,6 +73,7 @@ func TestSystemPrompt(t *testing.T) {
 	result, err := client.RunWithSystemPrompt(
 		"What language am I?",
 		"You are a helpful assistant that always responds in Spanish.",
+		nil,
 	)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -94,6 +95,7 @@ func TestConvenienceMethods(t *testing.T) {
 		result, err := client.RunWithSystemPrompt(
 			"Count to 3",
 			"Always respond with just numbers, no other text.",
+			nil,
 		)
 		if err != nil {
 			t.Fatalf("RunWithSystemPrompt failed: %v", err)
