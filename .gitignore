@@ -9,6 +9,21 @@ build/
 coverage/
 *.out
 
-# Binaries
+# Binaries (prevent top-level binary creation from manual go build)
 claude-go
 *.exe
+
+# Prevent any top-level binaries from examples/
+basic
+advanced
+testing
+demo
+demo-basic
+demo-streaming
+dangerous-example
+
+# Prevent any binary with common patterns in top-level
+*-example
+*-demo
+*_test
+*_test.exe

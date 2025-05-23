@@ -34,10 +34,12 @@ Our unit tests use mocked commands and don't require actual Claude Code CLI:
 ```bash
 # Run unit tests
 go test ./pkg/claude -v
-go test ./cmd/claudecli -v
 
 # Run specific test
 go test ./pkg/claude -run TestRunPrompt -v
+
+# Run all tests
+go test ./...
 ```
 
 ### 2. Integration Tests with Mock Server
@@ -54,18 +56,23 @@ task test-integration-real
 
 ### 3. Manual Testing
 
-Test the CLI binary directly:
+Test the examples and demos:
 
 ```bash
-# Build the CLI
-task build
+# Build all examples (outputs to bin/ directory)
+task build-examples
 
-# Test with a simple prompt (requires Claude Code CLI)
-./bin/claude-go -p "Hello, Claude!" --output-format json
+# Run the interactive demo
+task demo
 
-# Test with file input
-echo "package main\nfunc main() {}" | ./bin/claude-go -p "Review this Go code"
+# Test basic example manually (requires Claude Code CLI)
+./bin/basic-example
+
+# Test advanced example manually
+./bin/advanced-example
 ```
+
+**⚠️ Important:** Always use `task build-examples` or `make build-examples` instead of manual `go build` commands to ensure binaries are placed in the `bin/` directory.
 
 ## Setting Up Integration Tests
 

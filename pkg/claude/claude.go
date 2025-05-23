@@ -13,6 +13,8 @@ import (
 
 // execCommand is a variable to allow mocking of exec.Command for testing
 var execCommand = exec.Command
+// execCommandContext is a variable to allow mocking of exec.CommandContext for testing
+var execCommandContext = exec.CommandContext
 
 // OutputFormat defines the output format for Claude Code responses
 type OutputFormat string
@@ -120,6 +122,11 @@ func NewClient(binPath string) *ClaudeClient {
 
 // RunPrompt executes a prompt with Claude Code and returns the result
 func (c *ClaudeClient) RunPrompt(prompt string, opts *RunOptions) (*ClaudeResult, error) {
+	return c.RunPromptCtx(context.Background(), prompt, opts)
+}
+
+// RunPromptCtx executes a prompt with Claude Code and returns the result with context support
+func (c *ClaudeClient) RunPromptCtx(ctx context.Context, prompt string, opts *RunOptions) (*ClaudeResult, error) {
 	if opts == nil {
 		opts = c.DefaultOptions
 	}
@@ -134,7 +141,7 @@ func (c *ClaudeClient) RunPrompt(prompt string, opts *RunOptions) (*ClaudeResult
 
 	args := buildArgs(prompt, opts)
 
-	cmd := execCommand(c.BinPath, args...)
+	cmd := execCommandContext(ctx, c.BinPath, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -182,7 +189,7 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 		defer close(errCh)
 
 		// Create a custom command that supports context
-		cmd := execCommand(c.BinPath, args...)
+		cmd := execCommandContext(ctx, c.BinPath, args...)
 
 		// Set up a channel to handle context cancellation
 		doneCh := make(chan struct{})
@@ -270,13 +277,18 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 
 // RunFromStdin runs Claude Code with input from stdin
 func (c *ClaudeClient) RunFromStdin(stdin io.Reader, prompt string, opts *RunOptions) (*ClaudeResult, error) {
+	return c.RunFromStdinCtx(context.Background(), stdin, prompt, opts)
+}
+
+// RunFromStdinCtx runs Claude Code with input from stdin with context support
+func (c *ClaudeClient) RunFromStdinCtx(ctx context.Context, stdin io.Reader, prompt string, opts *RunOptions) (*ClaudeResult, error) {
 	if opts == nil {
 		opts = c.DefaultOptions
 	}
 
 	args := buildArgs(prompt, opts)
 
-	cmd := execCommand(c.BinPath, args...)
+	cmd := execCommandContext(ctx, c.BinPath, args...)
 	cmd.Stdin = stdin
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -358,7 +370,12 @@ func buildArgs(prompt string, opts *RunOptions) []string {
 
 // RunWithMCP is a convenience method for running Claude with MCP configuration
 func (c *ClaudeClient) RunWithMCP(prompt string, mcpConfigPath string, allowedTools []string) (*ClaudeResult, error) {
-	return c.RunPrompt(prompt, &RunOptions{
+	return c.RunWithMCPCtx(context.Background(), prompt, mcpConfigPath, allowedTools)
+}
+
+// RunWithMCPCtx is a convenience method for running Claude with MCP configuration with context support
+func (c *ClaudeClient) RunWithMCPCtx(ctx context.Context, prompt string, mcpConfigPath string, allowedTools []string) (*ClaudeResult, error) {
+	return c.RunPromptCtx(ctx, prompt, &RunOptions{
 		Format:        JSONOutput,
 		MCPConfigPath: mcpConfigPath,
 		AllowedTools:  allowedTools,
@@ -367,6 +384,11 @@ func (c *ClaudeClient) RunWithMCP(prompt string, mcpConfigPath string, allowedTo
 
 // RunWithSystemPrompt is a convenience method for running Claude with a custom system prompt
 func (c *ClaudeClient) RunWithSystemPrompt(prompt string, systemPrompt string, opts *RunOptions) (*ClaudeResult, error) {
+	return c.RunWithSystemPromptCtx(context.Background(), prompt, systemPrompt, opts)
+}
+
+// RunWithSystemPromptCtx is a convenience method for running Claude with a custom system prompt with context support
+func (c *ClaudeClient) RunWithSystemPromptCtx(ctx context.Context, prompt string, systemPrompt string, opts *RunOptions) (*ClaudeResult, error) {
 	if opts == nil {
 		opts = &RunOptions{}
 	}
@@ -375,12 +397,17 @@ func (c *ClaudeClient) RunWithSystemPrompt(prompt string, systemPrompt string, o
 	runOpts := *opts
 	runOpts.SystemPrompt = systemPrompt
 	
-	return c.RunPrompt(prompt, &runOpts)
+	return c.RunPromptCtx(ctx, prompt, &runOpts)
 }
 
 // ContinueConversation is a convenience method for continuing the most recent conversation
 func (c *ClaudeClient) ContinueConversation(prompt string) (*ClaudeResult, error) {
-	return c.RunPrompt(prompt, &RunOptions{
+	return c.ContinueConversationCtx(context.Background(), prompt)
+}
+
+// ContinueConversationCtx is a convenience method for continuing the most recent conversation with context support
+func (c *ClaudeClient) ContinueConversationCtx(ctx context.Context, prompt string) (*ClaudeResult, error) {
+	return c.RunPromptCtx(ctx, prompt, &RunOptions{
 		Format:   JSONOutput,
 		Continue: true,
 	})
@@ -388,7 +415,12 @@ func (c *ClaudeClient) ContinueConversation(prompt string) (*ClaudeResult, error
 
 // ResumeConversation is a convenience method for resuming a specific conversation
 func (c *ClaudeClient) ResumeConversation(prompt string, sessionID string) (*ClaudeResult, error) {
-	return c.RunPrompt(prompt, &RunOptions{
+	return c.ResumeConversationCtx(context.Background(), prompt, sessionID)
+}
+
+// ResumeConversationCtx is a convenience method for resuming a specific conversation with context support
+func (c *ClaudeClient) ResumeConversationCtx(ctx context.Context, prompt string, sessionID string) (*ClaudeResult, error) {
+	return c.RunPromptCtx(ctx, prompt, &RunOptions{
 		Format:   JSONOutput,
 		ResumeID: sessionID,
 	})

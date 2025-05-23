@@ -18,7 +18,8 @@ RESET := \033[0m
 .DEFAULT_GOAL := help
 
 # Phony targets (not files)
-.PHONY: all build build-lib examples build-examples build-demo build-demo-streaming build-demo-basic build-dangerous-example
+.PHONY: all build build-lib examples build-examples build-basic build-advanced build-testing
+.PHONY: build-demo build-demo-streaming build-demo-basic build-dangerous-example
 .PHONY: test test-lib test-dangerous test-integration test-integration-real test-local coverage
 .PHONY: demo demo-streaming demo-basic run-dangerous check-go check-claude
 .PHONY: clean help banner
@@ -65,6 +66,25 @@ build-dangerous-example: ## Build dangerous usage example
 	@mkdir -p $(BIN_DIR)
 	@cd examples/dangerous_usage && go mod tidy && go build -o ../../$(BIN_DIR)/dangerous-example .
 	@echo "$(GREEN)✅ Dangerous example built successfully$(RESET)"
+
+# Individual example build targets for development
+build-basic: ## Build basic example only
+	@echo "$(BLUE)🔨 Building basic example...$(RESET)"
+	@mkdir -p $(BIN_DIR)
+	@go build -o $(BIN_DIR)/basic-example ./examples/basic
+	@echo "$(GREEN)✅ Basic example built: $(BIN_DIR)/basic-example$(RESET)"
+
+build-advanced: ## Build advanced example only
+	@echo "$(BLUE)🔨 Building advanced example...$(RESET)"
+	@mkdir -p $(BIN_DIR)
+	@go build -o $(BIN_DIR)/advanced-example ./examples/advanced
+	@echo "$(GREEN)✅ Advanced example built: $(BIN_DIR)/advanced-example$(RESET)"
+
+build-testing: ## Build testing example only
+	@echo "$(BLUE)🔨 Building testing example...$(RESET)"
+	@mkdir -p $(BIN_DIR)
+	@go build -o $(BIN_DIR)/testing-example ./examples/testing
+	@echo "$(GREEN)✅ Testing example built: $(BIN_DIR)/testing-example$(RESET)"
 
 ##@ Test Targets
 

@@ -394,13 +394,30 @@ task demo          # Run interactive demo
 task test coverage # Run tests and generate coverage
 ```
 
+### Building Examples
+
+**⚠️ Important:** Always use the build commands below to ensure binaries are placed in the `bin/` directory.
+
+```bash
+# ✅ Correct way to build examples
+task build-examples        # Build all examples
+task build-basic           # Build basic example only
+task build-advanced        # Build advanced example only
+
+# ❌ Avoid this - creates binaries in top-level directory
+go build ./examples/basic
+go build ./examples/advanced
+```
+
 ### Available Commands
 
 | Make Command                 | Task Command                 | Description                            |
 | ---------------------------- | ---------------------------- | -------------------------------------- |
 | `make all`                   | `task`                       | Build and test the SDK                 |
 | `make build-lib`             | `task build-lib`             | Build the core library                 |
-| `make build-examples`        | `task build-examples`        | Build all example programs             |
+| `make build-examples`        | `task build-examples`        | Build all example programs to `bin/`   |
+| `make build-basic`           | `task build-basic`           | Build basic example to `bin/`          |
+| `make build-advanced`        | `task build-advanced`        | Build advanced example to `bin/`       |
 | `make demo`                  | `task demo`                  | Run the interactive demo               |
 | `make run-dangerous`         | `task run-dangerous`         | Run dangerous features example         |
 | `make test`                  | `task test`                  | Run unit tests                         |

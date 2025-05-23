@@ -83,6 +83,31 @@ tasks:
       - task: build-dangerous-example
       - echo "✅ Example builds completed"
 
+  # Individual example build targets for development
+  build-basic:
+    desc: "Build basic example only"
+    cmds:
+      - echo "🔨 Building basic example..."
+      - mkdir -p {{.BIN_DIR}}
+      - go build -o {{.BIN_DIR}}/basic-example ./examples/basic
+      - echo "✅ Basic example built at {{.BIN_DIR}}/basic-example"
+
+  build-advanced:
+    desc: "Build advanced example only"
+    cmds:
+      - echo "🔨 Building advanced example..."
+      - mkdir -p {{.BIN_DIR}}
+      - go build -o {{.BIN_DIR}}/advanced-example ./examples/advanced
+      - echo "✅ Advanced example built at {{.BIN_DIR}}/advanced-example"
+
+  build-testing:
+    desc: "Build testing example only"
+    cmds:
+      - echo "🔨 Building testing example..."
+      - mkdir -p {{.BIN_DIR}}
+      - go build -o {{.BIN_DIR}}/testing-example ./examples/testing
+      - echo "✅ Testing example built at {{.BIN_DIR}}/testing-example"
+
   build-demo:
     desc: "Build the interactive demo (streaming)"
     deps: [build-demo-streaming]
