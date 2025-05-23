@@ -9,11 +9,13 @@ This example shows how to properly use the `dangerous` package for legitimate us
 Before running this example, you must:
 
 1. **Set required environment variable**:
+
    ```bash
    export CLAUDE_ENABLE_DANGEROUS="i-accept-all-risks"
    ```
 
 2. **Ensure development environment**:
+
    ```bash
    export NODE_ENV="development"  # or unset
    ```
@@ -34,6 +36,7 @@ go run main.go
 ## What This Example Demonstrates
 
 ### ✅ Safe Operations Shown
+
 - Creating a dangerous client with proper environment checks
 - Setting environment variables with security warnings
 - Enabling MCP debug mode
@@ -41,6 +44,7 @@ go run main.go
 - Resetting dangerous settings
 
 ### ⚠️ Dangerous Operations (Explained but NOT Executed)
+
 - Permission bypass with `BYPASS_ALL_PERMISSIONS()`
 - Environment variable injection risks
 - Production environment blocking
@@ -110,7 +114,7 @@ go run main.go
 The dangerous package is intended for:
 
 - **Automated CI/CD pipelines** that need unattended operation
-- **Testing frameworks** that require bypassing interactive prompts  
+- **Testing frameworks** that require bypassing interactive prompts
 - **Development tooling** where user supervision isn't practical
 - **Container environments** with controlled, isolated execution
 
@@ -120,3 +124,4 @@ The dangerous package is intended for:
 ❌ **Processing untrusted input**  
 ❌ **Production web services**  
 ❌ **Shared development environments**
+

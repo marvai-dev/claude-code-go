@@ -1,3 +1,8 @@
+# Claude Code Go SDK - Build Pipeline (Task)
+# https://taskfile.dev
+# 
+# Alternative: Use `make <command>` if you prefer Makefiles (see Makefile)
+
 version: '3'
 
 vars:
@@ -178,10 +183,12 @@ tasks:
     desc: "Generate test coverage report"
     cmds:
       - echo "📊 Generating coverage report..."
+      - mkdir -p {{.COVERAGE_DIR}}
       - go test -coverprofile={{.COVERAGE_DIR}}/coverage.out ./pkg/... || echo "❌ Coverage generation failed"
       - go tool cover -func={{.COVERAGE_DIR}}/coverage.out || echo "❌ Coverage summary failed"
       - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html || echo "❌ HTML coverage report failed"
-      - echo "✅ Coverage generation completed (check for errors above)"
+      - echo "✅ Coverage generation completed"
+      - echo "📄 View HTML report at {{.COVERAGE_DIR}}/coverage.html"
 
   summary:
     desc: "Display final summary"

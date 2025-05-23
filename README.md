@@ -31,7 +31,8 @@ git clone https://github.com/lancekrogers/claude-code-go
 cd claude-code-go
 
 # Run the interactive demo
-task demo
+make demo
+# or: task demo
 ```
 
 The demo starts a conversation with Claude and lets you interact via a simple REPL, demonstrating session management and system prompts.
@@ -337,27 +338,27 @@ The SDK includes comprehensive testing with both unit tests and integration test
 
 ```bash
 # Run unit tests
-task test
+make test              # or: task test
 
 # Run dangerous package tests  
-task test-dangerous
+make test-dangerous    # or: task test-dangerous
 
 # Run integration tests with mock server
-task test-integration
+make test-integration  # or: task test-integration
 
 # Run integration tests with real Claude CLI
-task test-integration-real
+make test-integration-real  # or: task test-integration-real
 
 # Run all tests
-task test-local
+make test-local        # or: task test-local
 
 # Try the demo (interactive REPL)
-task demo
+make demo              # or: task demo
 
 # Try dangerous features example (development only)
 export CLAUDE_ENABLE_DANGEROUS="i-accept-all-risks"
 export NODE_ENV="development"
-task run-dangerous
+make run-dangerous     # or: task run-dangerous
 ```
 
 ## Official Documentation
@@ -371,21 +372,39 @@ This Go SDK wraps the official Claude Code CLI. For comprehensive documentation:
 
 ## Development
 
-We use [Task](https://taskfile.dev) for development automation:
+We provide both [Task](https://taskfile.dev) and Make for development automation. Use whichever you prefer:
 
-| Command                      | Description                            |
-| ---------------------------- | -------------------------------------- |
-| `task`                       | Build and test the SDK                 |
-| `task build-lib`             | Build the core library                 |
-| `task build-examples`        | Build all example programs             |
-| `task demo`                  | Run the interactive demo               |
-| `task run-dangerous`         | Run dangerous features example         |
-| `task test`                  | Run unit tests                         |
-| `task test-dangerous`        | Run dangerous package tests            |
-| `task test-integration`      | Run integration tests (mock)           |
-| `task test-integration-real` | Run integration tests (real Claude)    |
-| `task test-coverage`         | Generate coverage report               |
-| `task lint`                  | Run linting tools                      |
+### Using Make (traditional)
+```bash
+make help          # Show all available commands
+make build         # Build the SDK and examples  
+make demo          # Run interactive demo
+make test coverage # Run tests and generate coverage
+```
+
+### Using Task (modern alternative)
+```bash
+task --list        # Show all available commands
+task build         # Build the SDK and examples
+task demo          # Run interactive demo
+task test coverage # Run tests and generate coverage
+```
+
+### Available Commands
+
+| Make Command                 | Task Command                 | Description                            |
+| ---------------------------- | ---------------------------- | -------------------------------------- |
+| `make all`                   | `task`                       | Build and test the SDK                 |
+| `make build-lib`             | `task build-lib`             | Build the core library                 |
+| `make build-examples`        | `task build-examples`        | Build all example programs             |
+| `make demo`                  | `task demo`                  | Run the interactive demo               |
+| `make run-dangerous`         | `task run-dangerous`         | Run dangerous features example         |
+| `make test`                  | `task test`                  | Run unit tests                         |
+| `make test-dangerous`        | `task test-dangerous`        | Run dangerous package tests            |
+| `make test-integration`      | `task test-integration`      | Run integration tests (mock)           |
+| `make test-integration-real` | `task test-integration-real` | Run integration tests (real Claude)    |
+| `make coverage`              | `task coverage`              | Generate coverage report               |
+| `make clean`                 | `task clean`                 | Clean build artifacts                  |
 
 ## Project Architecture
 

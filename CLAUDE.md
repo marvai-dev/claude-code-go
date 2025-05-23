@@ -34,6 +34,7 @@ This project is a **Go SDK library** for programmatically integrating the Claude
 **Decision**: This project does not provide its own CLI interface.
 
 **Rationale**:
+
 - Users who want CLI access should use the official `claude` command
 - Creating a CLI wrapper would cause user confusion
 - Adds unnecessary maintenance burden
@@ -46,6 +47,7 @@ This project is a **Go SDK library** for programmatically integrating the Claude
 **Decision**: The entire project focuses on the Go library in `pkg/claude/`.
 
 **Core Functionality**:
+
 - `claude.NewClient()` - Create client instances
 - `client.RunPrompt()` - Execute single prompts
 - `client.StreamPrompt()` - Handle streaming responses
@@ -58,6 +60,7 @@ This project is a **Go SDK library** for programmatically integrating the Claude
 **Decision**: The SDK executes the official `claude` CLI as a subprocess.
 
 **Implementation**:
+
 - Uses `exec.Command()` to spawn `claude` processes
 - Builds command arguments programmatically
 - Parses JSON/text responses
@@ -94,18 +97,21 @@ result, err := client.RunWithSystemPrompt(
 ## Testing Strategy
 
 ### Unit Tests
+
 - Test argument building logic
 - Test response parsing
 - Test error handling
 - Mock subprocess execution
 
 ### Integration Tests
+
 - Test against mock Claude server
 - Validate full workflow: args → subprocess → parsing
 - Test streaming responses
 - Test all output formats (text, JSON, stream-json)
 
 ### Mock Server Approach
+
 - HTTP server that simulates Claude Code responses
 - Shell script mock binary that forwards to HTTP server
 - Enables testing without real Claude Code CLI dependency
@@ -113,16 +119,19 @@ result, err := client.RunWithSystemPrompt(
 ## Development Guidelines
 
 ### Do Not Add CLI Components
+
 - Never create `cmd/` directories
 - Do not build standalone executables for end users
 - Focus exclusively on the library interface
 
 ### Examples and Documentation
+
 - Examples should show Go library usage
 - Documentation should focus on `import` and API usage
 - Avoid CLI-style examples or documentation
 
 ### Dependencies
+
 - Minimize external dependencies
 - Only add deps that enhance SDK functionality
 - No CLI frameworks or command-line parsing libraries
@@ -130,6 +139,7 @@ result, err := client.RunWithSystemPrompt(
 ## Integration Tests
 
 Run integration tests with:
+
 ```bash
 task test-integration     # With mock server
 task test-integration-real # With real Claude CLI (if available)
@@ -146,3 +156,4 @@ The mock server enables testing the full SDK workflow without requiring Claude C
 ---
 
 **Remember**: This is an SDK library, not a CLI. Users import the Go package; they don't run a binary.
+
