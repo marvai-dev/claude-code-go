@@ -66,7 +66,31 @@ tasks:
       - go build -o {{.BIN_DIR}}/basic-example ./examples/basic || echo "❌ Basic example build failed"
       - go build -o {{.BIN_DIR}}/advanced-example ./examples/advanced || echo "❌ Advanced example build failed"
       - go build -o {{.BIN_DIR}}/testing-example ./examples/testing || echo "❌ Testing example build failed"
-      - echo "✅ Example builds completed (check for errors above)"
+      - task: build-demo
+      - task: build-dangerous-example
+      - echo "✅ Example builds completed"
+
+  build-demo:
+    desc: "Build the interactive demo"
+    cmds:
+      - echo "🔨 Building demo..."
+      - mkdir -p {{.BIN_DIR}}
+      - |
+        cd examples/demo
+        go mod tidy
+        go build -o ../../{{.BIN_DIR}}/demo ./cmd/demo
+      - echo "✅ Demo built successfully"
+
+  build-dangerous-example:
+    desc: "Build dangerous usage example"
+    cmds:
+      - echo "🔨 Building dangerous example..."
+      - mkdir -p {{.BIN_DIR}}
+      - |
+        cd examples/dangerous_usage
+        go mod tidy
+        go build -o ../../{{.BIN_DIR}}/dangerous-example .
+      - echo "✅ Dangerous example built successfully"
 
   test-all:
     desc: "Run all tests"
@@ -79,6 +103,76 @@ tasks:
       - echo "🧪 Testing core library..."
       - go test -v ./pkg/claude || echo "❌ Core library tests failed"
       - echo "✅ Core library tests completed (check for errors above)"
+
+  test-dangerous:
+    desc: "Test dangerous package (security-sensitive features)"
+    cmds:
+      - echo "🚨 Testing dangerous package..."
+      - go test -v ./pkg/claude/dangerous || echo "❌ Dangerous package tests failed"
+      - echo "✅ Dangerous package tests completed (check for errors above)"
+
+  demo:
+    desc: "Run the interactive Claude Code Go SDK demo"
+    deps: [build-demo]
+    cmds:
+      - echo "🚀 Claude Code Go SDK Demo"
+      - echo "=========================="
+      - |
+        # Check Go version
+        if ! command -v go &> /dev/null; then
+            echo "❌ Error: Go is not installed or not in PATH"
+            exit 1
+        fi
+        
+        go_version=$(go version | awk '{print $3}' | sed 's/go//')
+        major_version=$(echo $go_version | cut -d. -f1)
+        minor_version=$(echo $go_version | cut -d. -f2)
+        
+        if [[ $major_version -lt 1 ]] || [[ $major_version -eq 1 && $minor_version -lt 20 ]]; then
+            echo "❌ Error: Go ≥1.20 is required (found: $go_version)"
+            exit 1
+        fi
+        
+        echo "✔️  Go version: $go_version"
+      - |
+        # Check for claude CLI
+        if ! claude_path=$(command -v claude 2>/dev/null); then
+            echo "❌ Error: claude CLI not found in PATH"
+            echo "   Please install from: https://docs.anthropic.com/en/docs/claude-code/getting-started"
+            exit 1
+        fi
+        
+        echo "✔️  Found claude CLI: $claude_path"
+      - echo ""
+      - echo "🎯 Starting interactive demo..."
+      - echo "   Type your responses and press Enter"
+      - echo "   Press Enter on empty line to exit"
+      - echo ""
+      - "{{.BIN_DIR}}/demo"
+
+  run-dangerous:
+    desc: "Run dangerous features example (development only)"
+    deps: [build-dangerous-example]
+    cmds:
+      - echo "🚨 Running Dangerous Features Example"
+      - echo "====================================="
+      - |
+        # Check required environment variables
+        if [ "$CLAUDE_ENABLE_DANGEROUS" != "i-accept-all-risks" ]; then
+            echo "❌ Error: CLAUDE_ENABLE_DANGEROUS must be set to 'i-accept-all-risks'"
+            echo "   export CLAUDE_ENABLE_DANGEROUS=\"i-accept-all-risks\""
+            exit 1
+        fi
+        
+        # Check not in production
+        if [ "$NODE_ENV" = "production" ] || [ "$GO_ENV" = "production" ] || [ "$ENVIRONMENT" = "production" ]; then
+            echo "❌ Error: Cannot run dangerous example in production environment"
+            exit 1
+        fi
+        
+        echo "✔️  Security requirements met"
+      - echo ""
+      - "{{.BIN_DIR}}/dangerous-example"
 
   coverage:
     desc: "Generate test coverage report"

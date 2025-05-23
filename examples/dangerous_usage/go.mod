@@ -1,4 +1,4 @@
-module claude-demo
+module dangerous-usage-example
 
 go 1.24.2
 

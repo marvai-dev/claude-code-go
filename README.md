@@ -7,9 +7,11 @@ A Go library for programmatically integrating the [Claude Code Command Line Inte
 - **Full Claude Code CLI Wrapper**: Access all Claude Code features from your Go applications
 - **Streaming Support**: Real-time streaming of Claude's responses with context cancellation
 - **MCP Integration**: Model Context Protocol support for extending Claude with additional tools
+- **Security-Sensitive Features**: Controlled access to dangerous operations via separate package
 - **Stdin Processing**: Process files and other input sources through Claude
 - **Session Management**: Support for multi-turn conversations with automatic session handling
 - **Multiple Output Formats**: Text, JSON, and streaming JSON outputs
+- **Interactive Demo**: Ready-to-run REPL demonstrating SDK capabilities
 - **Convenience Methods**: Simplified APIs for common use cases
 - **Comprehensive Testing**: Unit and integration tests with mock server support
 
@@ -18,6 +20,21 @@ A Go library for programmatically integrating the [Claude Code Command Line Inte
 ```bash
 go get github.com/lancekrogers/claude-code-go
 ```
+
+## Quick Demo
+
+Try the interactive demo to see the SDK in action:
+
+```bash
+# Clone the repository
+git clone https://github.com/lancekrogers/claude-code-go
+cd claude-code-go
+
+# Run the interactive demo
+task demo
+```
+
+The demo starts a conversation with Claude and lets you interact via a simple REPL, demonstrating session management and system prompts.
 
 ## Prerequisites
 
@@ -178,8 +195,9 @@ result, err := client.RunWithMCP(
 
 // Custom system prompt
 result, err = client.RunWithSystemPrompt(
-	"You are a senior backend engineer",
 	"Create a REST API",
+	"You are a senior backend engineer",
+	nil,
 )
 
 // Continue most recent conversation
@@ -239,12 +257,50 @@ func (c *ClaudeClient) RunFromStdin(stdin io.Reader, prompt string, opts *RunOpt
 func (c *ClaudeClient) RunWithMCP(prompt, mcpConfigPath string, allowedTools []string) (*ClaudeResult, error)
 
 // System prompts
-func (c *ClaudeClient) RunWithSystemPrompt(systemPrompt, prompt string) (*ClaudeResult, error)
+func (c *ClaudeClient) RunWithSystemPrompt(prompt, systemPrompt string, opts *RunOptions) (*ClaudeResult, error)
 
 // Conversation management
 func (c *ClaudeClient) ContinueConversation(prompt string) (*ClaudeResult, error)
 func (c *ClaudeClient) ResumeConversation(prompt, sessionID string) (*ClaudeResult, error)
 ```
+
+## Security-Sensitive Features
+
+For advanced use cases that require bypassing Claude's safety controls, the SDK provides a separate `dangerous` package:
+
+```go
+import "github.com/lancekrogers/claude-code-go/pkg/claude/dangerous"
+
+// SECURITY REVIEW REQUIRED: Using dangerous Claude client
+// JUSTIFICATION: Automated deployment requires permission bypass
+// RISK ASSESSMENT: Running in isolated test environment
+// MITIGATION: Input validated, output logged
+
+client, err := dangerous.NewDangerousClient("claude")
+if err != nil {
+    // Fails unless CLAUDE_ENABLE_DANGEROUS="i-accept-all-risks"
+    // and not in production environment
+    return err
+}
+
+// Bypass permission prompts (use with extreme caution)
+result, err := client.BYPASS_ALL_PERMISSIONS("trusted prompt", nil)
+
+// Inject environment variables (security risk)
+err = client.SET_ENVIRONMENT_VARIABLES(map[string]string{
+    "CUSTOM_VAR": "value",
+})
+
+// Enable MCP debugging (may expose sensitive data)
+err = client.ENABLE_MCP_DEBUG()
+```
+
+**⚠️ Security Requirements:**
+- Must set `CLAUDE_ENABLE_DANGEROUS="i-accept-all-risks"`
+- Cannot be used in production environments
+- Requires explicit security review and justification
+
+See [pkg/claude/dangerous/README.md](pkg/claude/dangerous/README.md) for detailed usage.
 
 ## Integration with Agent Frameworks
 
@@ -283,6 +339,9 @@ The SDK includes comprehensive testing with both unit tests and integration test
 # Run unit tests
 task test
 
+# Run dangerous package tests  
+task test-dangerous
+
 # Run integration tests with mock server
 task test-integration
 
@@ -291,6 +350,14 @@ task test-integration-real
 
 # Run all tests
 task test-local
+
+# Try the demo (interactive REPL)
+task demo
+
+# Try dangerous features example (development only)
+export CLAUDE_ENABLE_DANGEROUS="i-accept-all-risks"
+export NODE_ENV="development"
+task run-dangerous
 ```
 
 ## Official Documentation
@@ -306,15 +373,19 @@ This Go SDK wraps the official Claude Code CLI. For comprehensive documentation:
 
 We use [Task](https://taskfile.dev) for development automation:
 
-| Command                    | Description                          |
-| -------------------------- | ------------------------------------ |
-| `task`                     | Build and test the SDK               |
-| `task build-lib`           | Build the core library               |
-| `task test`                | Run unit tests                       |
-| `task test-integration`    | Run integration tests (mock)         |
-| `task test-integration-real` | Run integration tests (real Claude) |
-| `task test-coverage`       | Generate coverage report             |
-| `task lint`                | Run linting tools                    |
+| Command                      | Description                            |
+| ---------------------------- | -------------------------------------- |
+| `task`                       | Build and test the SDK                 |
+| `task build-lib`             | Build the core library                 |
+| `task build-examples`        | Build all example programs             |
+| `task demo`                  | Run the interactive demo               |
+| `task run-dangerous`         | Run dangerous features example         |
+| `task test`                  | Run unit tests                         |
+| `task test-dangerous`        | Run dangerous package tests            |
+| `task test-integration`      | Run integration tests (mock)           |
+| `task test-integration-real` | Run integration tests (real Claude)    |
+| `task test-coverage`         | Generate coverage report               |
+| `task lint`                  | Run linting tools                      |
 
 ## Project Architecture
 
