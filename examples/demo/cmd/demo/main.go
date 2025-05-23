@@ -18,7 +18,7 @@ func main() {
 
 	// First call with system prompt
 	fmt.Println("Starting demo conversation...")
-	result, err := client.RunWithSystemPrompt("", systemPrompt, &claude.RunOptions{
+	result, err := client.RunWithSystemPrompt("Please introduce yourself and explain your approach to this task.", systemPrompt, &claude.RunOptions{
 		Format: claude.JSONOutput,
 	})
 	if err != nil {

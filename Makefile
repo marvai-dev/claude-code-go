@@ -57,37 +57,105 @@ build-dangerous-example: ## Build dangerous usage example
 
 ##@ Test Targets
 
-test: test-lib ## Run unit tests
+test: ## Run core tests (dashboard mode)
+	@echo "$(BLUE)🧪 Core Test Suite$(RESET)"
+	@echo "$(BLUE)==================$(RESET)"
+	@echo ""
+	@make -s test-lib
+	@echo ""
 
-test-lib: ## Test the core library
+test-lib: ## Test the core library (quiet mode)
 	@echo "$(BLUE)🧪 Testing core library...$(RESET)"
-	@go test -v ./pkg/claude || echo "$(RED)❌ Core library tests failed$(RESET)"
-	@echo "$(GREEN)✅ Core library tests completed$(RESET)"
+	@if go test ./pkg/claude > /tmp/test-core.log 2>&1; then \
+		echo "$(GREEN)✅ Core library tests: PASSED$(RESET)"; \
+	else \
+		echo "$(RED)❌ Core library tests: FAILED$(RESET)"; \
+		echo "$(YELLOW)📋 Run 'make test-lib-verbose' for details$(RESET)"; \
+		exit 1; \
+	fi
 
-test-dangerous: ## Test dangerous package (security-sensitive features)
+test-lib-verbose: ## Test the core library (verbose mode)
+	@echo "$(BLUE)🧪 Testing core library (verbose)...$(RESET)"
+	@go test -v ./pkg/claude
+
+test-dangerous: ## Test dangerous package (quiet mode)
 	@echo "$(YELLOW)🚨 Testing dangerous package...$(RESET)"
-	@go test -v ./pkg/claude/dangerous || echo "$(RED)❌ Dangerous package tests failed$(RESET)"
-	@echo "$(GREEN)✅ Dangerous package tests completed$(RESET)"
+	@if go test ./pkg/claude/dangerous > /tmp/test-dangerous.log 2>&1; then \
+		echo "$(GREEN)✅ Dangerous package tests: PASSED$(RESET)"; \
+	else \
+		echo "$(RED)❌ Dangerous package tests: FAILED$(RESET)"; \
+		echo "$(YELLOW)📋 Run 'make test-dangerous-verbose' for details$(RESET)"; \
+		exit 1; \
+	fi
 
-test-integration: ## Run integration tests with mock server
+test-dangerous-verbose: ## Test dangerous package (verbose mode)
+	@echo "$(YELLOW)🚨 Testing dangerous package (verbose)...$(RESET)"
+	@go test -v ./pkg/claude/dangerous
+
+test-integration: ## Run integration tests with mock server (quiet mode)
 	@echo "$(BLUE)🔗 Running integration tests (mock server)...$(RESET)"
-	@go test -v ./test/integration || echo "$(RED)❌ Integration tests failed$(RESET)"
-	@echo "$(GREEN)✅ Integration tests completed$(RESET)"
+	@if go test ./test/integration > /tmp/test-integration.log 2>&1; then \
+		echo "$(GREEN)✅ Integration tests: PASSED$(RESET)"; \
+	else \
+		echo "$(RED)❌ Integration tests: FAILED$(RESET)"; \
+		echo "$(YELLOW)📋 Run 'make test-integration-verbose' for details$(RESET)"; \
+		exit 1; \
+	fi
 
-test-integration-real: ## Run integration tests with real Claude CLI
+test-integration-verbose: ## Run integration tests with mock server (verbose mode)
+	@echo "$(BLUE)🔗 Running integration tests (mock server, verbose)...$(RESET)"
+	@go test -v ./test/integration
+
+test-integration-real: ## Run integration tests with real Claude CLI (quiet mode)
 	@echo "$(BLUE)🔗 Running integration tests (real Claude CLI)...$(RESET)"
-	@CLAUDE_INTEGRATION_TEST=real go test -v ./test/integration || echo "$(RED)❌ Real integration tests failed$(RESET)"
-	@echo "$(GREEN)✅ Real integration tests completed$(RESET)"
+	@if CLAUDE_INTEGRATION_TEST=real go test ./test/integration > /tmp/test-integration-real.log 2>&1; then \
+		echo "$(GREEN)✅ Real integration tests: PASSED$(RESET)"; \
+	else \
+		echo "$(RED)❌ Real integration tests: FAILED$(RESET)"; \
+		echo "$(YELLOW)📋 Run 'make test-integration-real-verbose' for details$(RESET)"; \
+		exit 1; \
+	fi
 
-test-local: test test-integration ## Run all tests locally
-	@echo "$(GREEN)✅ All local tests completed$(RESET)"
+test-integration-real-verbose: ## Run integration tests with real Claude CLI (verbose mode)
+	@echo "$(BLUE)🔗 Running integration tests (real Claude CLI, verbose)...$(RESET)"
+	@CLAUDE_INTEGRATION_TEST=real go test -v ./test/integration
 
-coverage: ## Generate test coverage report
+test-local: ## Run all local tests (dashboard mode)
+	@echo "$(BLUE)🧪 Running full test suite...$(RESET)"
+	@echo "$(BLUE)=============================$(RESET)"
+	@echo ""
+	@make -s test-lib
+	@make -s test-dangerous
+	@make -s test-integration
+	@echo ""
+	@echo "$(GREEN)✅ All tests completed successfully$(RESET)"
+
+test-all: test-local coverage ## Run all tests and generate coverage (dashboard mode)
+	@echo ""
+	@echo "$(GREEN)🎉 Complete test suite finished!$(RESET)"
+
+test-all-verbose: test-lib-verbose test-dangerous-verbose test-integration-verbose coverage-verbose ## Run all tests with verbose output
+
+coverage: ## Generate test coverage report (quiet mode)
 	@echo "$(BLUE)📊 Generating coverage report...$(RESET)"
 	@mkdir -p $(COVERAGE_DIR)
-	@go test -coverprofile=$(COVERAGE_DIR)/coverage.out ./pkg/... || echo "$(RED)❌ Coverage generation failed$(RESET)"
-	@go tool cover -func=$(COVERAGE_DIR)/coverage.out || echo "$(RED)❌ Coverage summary failed$(RESET)"
-	@go tool cover -html=$(COVERAGE_DIR)/coverage.out -o $(COVERAGE_DIR)/coverage.html || echo "$(RED)❌ HTML coverage report failed$(RESET)"
+	@if go test -coverprofile=$(COVERAGE_DIR)/coverage.out ./pkg/... > /tmp/coverage.log 2>&1; then \
+		echo "$(GREEN)✅ Coverage generation: COMPLETED$(RESET)"; \
+		coverage_pct=$$(go tool cover -func=$(COVERAGE_DIR)/coverage.out | tail -1 | awk '{print $$3}'); \
+		echo "$(BLUE)📈 Total coverage: $$coverage_pct$(RESET)"; \
+		go tool cover -html=$(COVERAGE_DIR)/coverage.out -o $(COVERAGE_DIR)/coverage.html; \
+		echo "$(BLUE)📄 HTML report: $(COVERAGE_DIR)/coverage.html$(RESET)"; \
+	else \
+		echo "$(RED)❌ Coverage generation: FAILED$(RESET)"; \
+		exit 1; \
+	fi
+
+coverage-verbose: ## Generate test coverage report (verbose mode)
+	@echo "$(BLUE)📊 Generating coverage report (verbose)...$(RESET)"
+	@mkdir -p $(COVERAGE_DIR)
+	@go test -coverprofile=$(COVERAGE_DIR)/coverage.out ./pkg/...
+	@go tool cover -func=$(COVERAGE_DIR)/coverage.out
+	@go tool cover -html=$(COVERAGE_DIR)/coverage.out -o $(COVERAGE_DIR)/coverage.html
 	@echo "$(GREEN)✅ Coverage generation completed$(RESET)"
 	@echo "$(BLUE)📄 View HTML report at $(COVERAGE_DIR)/coverage.html$(RESET)"
 
@@ -167,10 +235,17 @@ help: ## Display this help message
 	@echo ""
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage:\n  make $(BLUE)<target>$(RESET)\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  $(BLUE)%-20s$(RESET) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(RESET)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 	@echo ""
+	@echo "$(YELLOW)Quick Start:$(RESET)"
+	@echo "  $(BLUE)make test-local$(RESET)               Run all tests (clean dashboard)"
+	@echo "  $(BLUE)make test-all$(RESET)                 Run tests + coverage (complete dashboard)"
+	@echo "  $(BLUE)make demo$(RESET)                     Run interactive demo"
+	@echo ""
+	@echo "$(YELLOW)Dashboard vs Verbose:$(RESET)"
+	@echo "  $(BLUE)make test-local$(RESET)               Clean dashboard output"
+	@echo "  $(BLUE)make test-all-verbose$(RESET)         Detailed test output"
+	@echo ""
 	@echo "$(YELLOW)Examples:$(RESET)"
 	@echo "  $(BLUE)make build$(RESET)                    Build the SDK and examples"
-	@echo "  $(BLUE)make demo$(RESET)                     Run interactive demo"
-	@echo "  $(BLUE)make test coverage$(RESET)            Run tests and generate coverage"
 	@echo "  $(BLUE)CLAUDE_ENABLE_DANGEROUS=\"i-accept-all-risks\" make run-dangerous$(RESET)"
 	@echo ""
 	@echo "$(YELLOW)Alternative:$(RESET) You can also use $(BLUE)task <command>$(RESET) (see Taskfile.yml)"
