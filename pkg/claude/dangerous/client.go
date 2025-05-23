@@ -196,7 +196,7 @@ func (c *DangerousClient) runWithDangerousFlags(prompt string, opts *claude.RunO
 	}
 
 	// Create command
-	cmd := exec.Command(c.BinPath, args...)
+	cmd := exec.Command(c.ClaudeClient.BinPath, args...)
 
 	// Set custom environment if requested
 	if useCustomEnv && len(c.envVars) > 0 {
