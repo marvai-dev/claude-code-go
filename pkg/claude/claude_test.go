@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -332,4 +333,332 @@ func TestValidateMCPTools(t *testing.T) {
 	if err := validateMCPTools([]string{"mcp__badtool"}); err == nil {
 		t.Fatal("Expected error for malformed tool name, got nil")
 	}
+}
+
+// Test convenience methods
+func TestRunWithMCP(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	jsonOutput := `{"type":"result","subtype":"success","cost_usd":0.001,"duration_ms":1234,"duration_api_ms":1000,"is_error":false,"num_turns":1,"result":"MCP response","session_id":"abc123"}`
+	execCommand = mockExecCommandContext(t, []string{"-p", "Test MCP", "--output-format", "json", "--mcp-config", "/path/to/config.json", "--allowedTools", "tool1,tool2"}, jsonOutput, 0)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	result, err := client.RunWithMCP("Test MCP", "/path/to/config.json", []string{"tool1", "tool2"})
+	
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if result.Result != "MCP response" {
+		t.Errorf("Expected 'MCP response', got %q", result.Result)
+	}
+}
+
+func TestRunWithMCPCtx(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	jsonOutput := `{"type":"result","subtype":"success","cost_usd":0.001,"duration_ms":1234,"duration_api_ms":1000,"is_error":false,"num_turns":1,"result":"MCP context response","session_id":"abc123"}`
+	execCommand = mockExecCommandContext(t, []string{"-p", "Test MCP Ctx", "--output-format", "json", "--mcp-config", "/path/to/config.json", "--allowedTools", "tool1"}, jsonOutput, 0)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	ctx := context.Background()
+	result, err := client.RunWithMCPCtx(ctx, "Test MCP Ctx", "/path/to/config.json", []string{"tool1"})
+	
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if result.Result != "MCP context response" {
+		t.Errorf("Expected 'MCP context response', got %q", result.Result)
+	}
+}
+
+func TestRunWithSystemPrompt(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	execCommand = mockExecCommandContext(t, []string{"-p", "Test prompt", "--system-prompt", "Custom system prompt"}, "System prompt response", 0)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	result, err := client.RunWithSystemPrompt("Test prompt", "Custom system prompt", nil)
+	
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if result.Result != "System prompt response" {
+		t.Errorf("Expected 'System prompt response', got %q", result.Result)
+	}
+}
+
+func TestRunWithSystemPromptCtx(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	execCommand = mockExecCommandContext(t, []string{"-p", "Test prompt", "--output-format", "json", "--system-prompt", "Custom system prompt"}, `{"type":"result","result":"System prompt ctx response","is_error":false}`, 0)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	ctx := context.Background()
+	result, err := client.RunWithSystemPromptCtx(ctx, "Test prompt", "Custom system prompt", &RunOptions{Format: JSONOutput})
+	
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if result.Result != "System prompt ctx response" {
+		t.Errorf("Expected 'System prompt ctx response', got %q", result.Result)
+	}
+}
+
+func TestContinueConversation(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	jsonOutput := `{"type":"result","subtype":"success","cost_usd":0.001,"duration_ms":1234,"duration_api_ms":1000,"is_error":false,"num_turns":2,"result":"Continued response","session_id":"continue123"}`
+	execCommand = mockExecCommandContext(t, []string{"-p", "Continue", "--output-format", "json", "--continue"}, jsonOutput, 0)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	result, err := client.ContinueConversation("Continue")
+	
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if result.Result != "Continued response" {
+		t.Errorf("Expected 'Continued response', got %q", result.Result)
+	}
+	if result.NumTurns != 2 {
+		t.Errorf("Expected 2 turns, got %d", result.NumTurns)
+	}
+}
+
+func TestContinueConversationCtx(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	jsonOutput := `{"type":"result","subtype":"success","cost_usd":0.001,"duration_ms":1234,"duration_api_ms":1000,"is_error":false,"num_turns":3,"result":"Continued ctx response","session_id":"continue123"}`
+	execCommand = mockExecCommandContext(t, []string{"-p", "Continue ctx", "--output-format", "json", "--continue"}, jsonOutput, 0)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	ctx := context.Background()
+	result, err := client.ContinueConversationCtx(ctx, "Continue ctx")
+	
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if result.Result != "Continued ctx response" {
+		t.Errorf("Expected 'Continued ctx response', got %q", result.Result)
+	}
+}
+
+func TestResumeConversation(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	jsonOutput := `{"type":"result","subtype":"success","cost_usd":0.001,"duration_ms":1234,"duration_api_ms":1000,"is_error":false,"num_turns":1,"result":"Resumed response","session_id":"resume123"}`
+	execCommand = mockExecCommandContext(t, []string{"-p", "Resume", "--output-format", "json", "--resume", "resume123"}, jsonOutput, 0)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	result, err := client.ResumeConversation("Resume", "resume123")
+	
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if result.Result != "Resumed response" {
+		t.Errorf("Expected 'Resumed response', got %q", result.Result)
+	}
+	if result.SessionID != "resume123" {
+		t.Errorf("Expected session ID 'resume123', got %q", result.SessionID)
+	}
+}
+
+func TestResumeConversationCtx(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	jsonOutput := `{"type":"result","subtype":"success","cost_usd":0.001,"duration_ms":1234,"duration_api_ms":1000,"is_error":false,"num_turns":1,"result":"Resumed ctx response","session_id":"resume123"}`
+	execCommand = mockExecCommandContext(t, []string{"-p", "Resume ctx", "--output-format", "json", "--resume", "resume123"}, jsonOutput, 0)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	ctx := context.Background()
+	result, err := client.ResumeConversationCtx(ctx, "Resume ctx", "resume123")
+	
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if result.Result != "Resumed ctx response" {
+		t.Errorf("Expected 'Resumed ctx response', got %q", result.Result)
+	}
+}
+
+// Test error handling scenarios
+func TestRunPromptCtx_MCPValidationErrors(t *testing.T) {
+	client := &ClaudeClient{BinPath: "claude"}
+	
+	// Test malformed MCP tool in AllowedTools
+	_, err := client.RunPromptCtx(context.Background(), "test", &RunOptions{
+		AllowedTools: []string{"mcp__badtool"},
+	})
+	if err == nil {
+		t.Fatal("Expected error for malformed MCP tool in AllowedTools, got nil")
+	}
+	
+	// Test malformed MCP tool in DisallowedTools
+	_, err = client.RunPromptCtx(context.Background(), "test", &RunOptions{
+		DisallowedTools: []string{"mcp__anotherbadtool"},
+	})
+	if err == nil {
+		t.Fatal("Expected error for malformed MCP tool in DisallowedTools, got nil")
+	}
+}
+
+func TestRunPromptCtx_JSONParsingError(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	// Mock command that returns invalid JSON
+	execCommand = mockExecCommandContext(t, []string{"-p", "JSON test", "--output-format", "json"}, "invalid json", 0)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	_, err := client.RunPromptCtx(context.Background(), "JSON test", &RunOptions{Format: JSONOutput})
+	
+	if err == nil {
+		t.Fatal("Expected JSON parsing error, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to parse JSON response") {
+		t.Errorf("Expected JSON parsing error message, got: %v", err)
+	}
+}
+
+func TestRunPromptCtx_CommandFailure(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	// Mock command that fails
+	execCommand = mockExecCommandContext(t, []string{"-p", "Fail test"}, "", 1)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	_, err := client.RunPromptCtx(context.Background(), "Fail test", &RunOptions{})
+	
+	if err == nil {
+		t.Fatal("Expected command failure error, got nil")
+	}
+	if !strings.Contains(err.Error(), "claude command failed") {
+		t.Errorf("Expected command failure error message, got: %v", err)
+	}
+}
+
+func TestRunFromStdinCtx_JSONParsingError(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	// Mock command that returns invalid JSON
+	execCommand = mockExecCommandContext(t, []string{"-p", "--output-format", "json"}, "invalid json", 0)
+
+	client := &ClaudeClient{BinPath: "claude"}
+	stdin := bytes.NewBufferString("test input")
+	_, err := client.RunFromStdinCtx(context.Background(), stdin, "", &RunOptions{Format: JSONOutput})
+	
+	if err == nil {
+		t.Fatal("Expected JSON parsing error, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to parse JSON response") {
+		t.Errorf("Expected JSON parsing error message, got: %v", err)
+	}
+}
+
+func TestRunFromStdinCtx_CommandFailure(t *testing.T) {
+	originalExecCommand := execCommand
+	defer func() {
+		execCommand = originalExecCommand
+	}()
+
+	// Mock command that fails with stderr
+	execCommand = func(ctx context.Context, name string, arg ...string) *exec.Cmd {
+		cs := []string{"-test.run=TestHelperProcessError", "--", name}
+		cs = append(cs, arg...)
+		cmd := exec.Command(os.Args[0], cs...)
+		cmd.Env = []string{"GO_WANT_HELPER_PROCESS_ERROR=1"}
+		return cmd
+	}
+
+	client := &ClaudeClient{BinPath: "claude"}
+	stdin := bytes.NewBufferString("test input")
+	_, err := client.RunFromStdinCtx(context.Background(), stdin, "", &RunOptions{})
+	
+	if err == nil {
+		t.Fatal("Expected command failure error, got nil")
+	}
+}
+
+func TestBuildArgs_EdgeCases(t *testing.T) {
+	// Test empty prompt
+	args := buildArgs("", &RunOptions{Format: TextOutput})
+	expected := []string{"-p", "--output-format", "text"}
+	if len(args) != len(expected) || args[0] != "-p" || args[1] != "--output-format" {
+		t.Errorf("Expected %v for empty prompt, got %v", expected, args)
+	}
+	
+	// Test ResumeID takes precedence over Continue
+	args = buildArgs("test", &RunOptions{
+		ResumeID: "session123",
+		Continue: true,
+	})
+	foundResume := false
+	foundContinue := false
+	for i, arg := range args {
+		if arg == "--resume" {
+			foundResume = true
+			if i+1 < len(args) && args[i+1] == "session123" {
+				// Good
+			} else {
+				t.Error("--resume should be followed by session123")
+			}
+		}
+		if arg == "--continue" {
+			foundContinue = true
+		}
+	}
+	if !foundResume {
+		t.Error("Expected --resume to be present")
+	}
+	if foundContinue {
+		t.Error("Expected --continue to be absent when ResumeID is set")
+	}
+	
+	// Test MaxTurns = 0 should not add --max-turns
+	args = buildArgs("test", &RunOptions{MaxTurns: 0})
+	for _, arg := range args {
+		if arg == "--max-turns" {
+			t.Error("Expected --max-turns to be absent when MaxTurns is 0")
+		}
+	}
+}
+
+// Helper for command failure tests
+func TestHelperProcessError(t *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS_ERROR") != "1" {
+		return
+	}
+	defer os.Exit(1)
+	os.Stderr.Write([]byte("command failed with error"))
 }
