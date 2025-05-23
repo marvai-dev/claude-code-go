@@ -38,40 +38,6 @@ func mockExecCommandContext(t *testing.T, expectedArgs []string, output string, 
 	}
 }
 
-// mockExecCommand returns a function that creates a mock command
-func mockExecCommand(t *testing.T, expectedArgs []string, output string, exitCode int) func(name string, arg ...string) *exec.Cmd {
-	return func(name string, arg ...string) *exec.Cmd {
-		// Verify correct arguments were passed
-		if len(arg) != len(expectedArgs) {
-			t.Errorf("Expected %d arguments, got %d", len(expectedArgs), len(arg))
-		}
-
-		for i, a := range arg {
-			if i < len(expectedArgs) && a != expectedArgs[i] {
-				t.Errorf("Expected arg[%d] to be %q, got %q", i, expectedArgs[i], a)
-			}
-		}
-
-		// Create a fake command that outputs our desired text and exits with the given code
-		cs := []string{"-test.run=TestHelperProcess", "--", name}
-		cs = append(cs, arg...)
-
-		cmd := exec.Command(os.Args[0], cs...)
-		cmd.Env = []string{
-			"GO_WANT_HELPER_PROCESS=1",
-			"GO_HELPER_OUTPUT=" + output,
-			"GO_HELPER_EXIT_CODE=" + string(rune(exitCode)+'0'),
-		}
-		return cmd
-	}
-}
-
-// mockCommand is a helper to mock execCommand in tests. It simply reuses
-// mockExecCommand to create a fake *exec.Cmd that returns the specified
-// output and exit code while verifying the provided arguments.
-func mockCommand(t *testing.T, expectedArgs []string, output string, exitCode int) func(name string, arg ...string) *exec.Cmd {
-	return mockExecCommand(t, expectedArgs, output, exitCode)
-}
 
 // TestHelperProcess isn't a real test - it's used to mock exec.Command
 func TestHelperProcess(t *testing.T) {
@@ -91,17 +57,14 @@ func TestHelperProcess(t *testing.T) {
 }
 
 func TestRunPrompt(t *testing.T) {
-	// Save the original exec.Command and restore it after the test
+	// Save the original execCommand and restore it after the test
 	originalExecCommand := execCommand
-	originalExecCommandContext := execCommandContext
 	defer func() {
 		execCommand = originalExecCommand
-		execCommandContext = originalExecCommandContext
 	}()
 
 	// Test with text output
-	execCommand = mockExecCommand(t, []string{"-p", "Hello, Claude", "--output-format", "text"}, "Hello, human!", 0)
-	execCommandContext = mockExecCommandContext(t, []string{"-p", "Hello, Claude", "--output-format", "text"}, "Hello, human!", 0)
+	execCommand = mockExecCommandContext(t, []string{"-p", "Hello, Claude", "--output-format", "text"}, "Hello, human!", 0)
 
 	client := &ClaudeClient{BinPath: "claude"}
 	result, err := client.RunPrompt("Hello, Claude", &RunOptions{Format: TextOutput})
@@ -115,8 +78,7 @@ func TestRunPrompt(t *testing.T) {
 
 	// Test with JSON output
 	jsonOutput := `{"type":"result","subtype":"success","cost_usd":0.001,"duration_ms":1234,"duration_api_ms":1000,"is_error":false,"num_turns":1,"result":"JSON response","session_id":"abc123"}`
-	execCommand = mockExecCommand(t, []string{"-p", "JSON test", "--output-format", "json"}, jsonOutput, 0)
-	execCommandContext = mockExecCommandContext(t, []string{"-p", "JSON test", "--output-format", "json"}, jsonOutput, 0)
+	execCommand = mockExecCommandContext(t, []string{"-p", "JSON test", "--output-format", "json"}, jsonOutput, 0)
 
 	result, err = client.RunPrompt("JSON test", &RunOptions{Format: JSONOutput})
 	if err != nil {
@@ -136,8 +98,7 @@ func TestRunPrompt(t *testing.T) {
 	}
 
 	// Test error handling
-	execCommand = mockExecCommand(t, []string{"-p", "Error test"}, "", 1)
-	execCommandContext = mockExecCommandContext(t, []string{"-p", "Error test"}, "", 1)
+	execCommand = mockExecCommandContext(t, []string{"-p", "Error test"}, "", 1)
 
 	_, err = client.RunPrompt("Error test", &RunOptions{})
 
@@ -149,10 +110,8 @@ func TestRunPrompt(t *testing.T) {
 func TestStreamPrompt(t *testing.T) {
 	// For streaming test, we'll create a simple mock that sends predefined messages
 	originalExecCommand := execCommand
-	originalExecCommandContext := execCommandContext
 	defer func() {
 		execCommand = originalExecCommand
-		execCommandContext = originalExecCommandContext
 	}()
 
 	// Create a temporary file for our mock script
@@ -185,10 +144,7 @@ func main() {
 	}
 
 	// Replace execCommand with our mock
-	execCommand = func(name string, arg ...string) *exec.Cmd {
-		return exec.Command(mockBinary)
-	}
-	execCommandContext = func(_ context.Context, name string, arg ...string) *exec.Cmd {
+	execCommand = func(_ context.Context, name string, arg ...string) *exec.Cmd {
 		return exec.Command(mockBinary)
 	}
 
@@ -239,15 +195,12 @@ func main() {
 
 func TestRunFromStdin(t *testing.T) {
 	origExecCommand := execCommand
-	origExecCommandContext := execCommandContext
 	defer func() {
 		execCommand = origExecCommand
-		execCommandContext = origExecCommandContext
 	}()
 
 	// Test with text input from stdin
-	execCommand = mockExecCommand(t, []string{"-p", "--output-format", "text"}, "Analyzed your input", 0)
-	execCommandContext = mockExecCommandContext(t, []string{"-p", "--output-format", "text"}, "Analyzed your input", 0)
+	execCommand = mockExecCommandContext(t, []string{"-p", "--output-format", "text"}, "Analyzed your input", 0)
 
 	client := &ClaudeClient{BinPath: "claude"}
 	stdin := bytes.NewBufferString("Code to analyze")

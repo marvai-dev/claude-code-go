@@ -11,10 +11,8 @@ import (
 	"strings"
 )
 
-// execCommand is a variable to allow mocking of exec.Command for testing
-var execCommand = exec.Command
-// execCommandContext is a variable to allow mocking of exec.CommandContext for testing
-var execCommandContext = exec.CommandContext
+// execCommand is a variable to allow mocking of exec.CommandContext for testing
+var execCommand = exec.CommandContext
 
 // OutputFormat defines the output format for Claude Code responses
 type OutputFormat string
@@ -141,7 +139,7 @@ func (c *ClaudeClient) RunPromptCtx(ctx context.Context, prompt string, opts *Ru
 
 	args := buildArgs(prompt, opts)
 
-	cmd := execCommandContext(ctx, c.BinPath, args...)
+	cmd := execCommand(ctx, c.BinPath, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -189,7 +187,7 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 		defer close(errCh)
 
 		// Create a custom command that supports context
-		cmd := execCommandContext(ctx, c.BinPath, args...)
+		cmd := execCommand(ctx, c.BinPath, args...)
 
 		// Set up a channel to handle context cancellation
 		doneCh := make(chan struct{})
@@ -288,7 +286,7 @@ func (c *ClaudeClient) RunFromStdinCtx(ctx context.Context, stdin io.Reader, pro
 
 	args := buildArgs(prompt, opts)
 
-	cmd := execCommandContext(ctx, c.BinPath, args...)
+	cmd := execCommand(ctx, c.BinPath, args...)
 	cmd.Stdin = stdin
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

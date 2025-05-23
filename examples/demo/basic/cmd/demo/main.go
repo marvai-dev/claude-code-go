@@ -6,27 +6,21 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/lancekrogers/claude-code-go/pkg/claude"
 )
 
-// isExitCommand checks if the input is a command to exit the REPL
-func isExitCommand(input string) bool {
-	input = strings.ToLower(strings.TrimSpace(input))
-	exitCommands := []string{
-		"exit", "quit", "bye", "goodbye", "q", ":q", ":quit", ":exit",
-		"done", "finish", "end", "stop", "close", "leave", "logout",
-		"ctrl+c", "^c", "cancel", "abort", "terminate",
-	}
+var exitCommands = []string{
+	"exit", "quit", "bye", "goodbye", "q", ":q", ":quit", ":exit",
+	"done", "finish", "end", "stop", "close", "leave", "logout",
+	"ctrl+c", "^c", "cancel", "abort", "terminate",
+}
 
-	for _, cmd := range exitCommands {
-		if input == cmd {
-			return true
-		}
-	}
-	return false
+func isExitCommand(input string) bool {
+	return slices.Contains(exitCommands, strings.ToLower(strings.TrimSpace(input)))
 }
 
 const systemPrompt = `
