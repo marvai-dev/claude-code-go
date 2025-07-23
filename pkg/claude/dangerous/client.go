@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/marvai-dev/claude-code-go/pkg/claude"
+	"github.com/marvai-dev/claude-code-go/pkg/claude/buffer"
 )
 
 // DangerousClient provides access to unsafe Claude Code operations
@@ -206,10 +207,21 @@ func (c *DangerousClient) runWithDangerousFlags(ctx context.Context, prompt stri
 		fmt.Fprintf(os.Stderr, "🌍 ENV: Using custom environment with %d additional variables\n", len(c.envVars))
 	}
 
+	// Set up buffer management for dangerous operations
+	bufferConfig := opts.BufferConfig
+	if bufferConfig == nil {
+		bufferConfig = buffer.DefaultConfig()
+		// Use larger buffers for dangerous operations which might produce more output
+		bufferConfig.MaxStdoutSize = 50 * 1024 * 1024 // 50MB
+		bufferConfig.MaxStderrSize = 5 * 1024 * 1024   // 5MB
+	}
+	bufManager := buffer.NewBufferManager(bufferConfig)
+	
 	// Execute command with enhanced error handling
-	var stdout, stderr strings.Builder
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	stdout := bufManager.NewStdoutBuffer()
+	stderr := bufManager.NewStderrBuffer()
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	err := cmd.Run()
 	if err != nil {

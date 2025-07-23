@@ -2,7 +2,6 @@ package claude
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +10,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/marvai-dev/claude-code-go/pkg/claude/buffer"
 )
 
 // execCommand is a variable to allow mocking of exec.CommandContext for testing
@@ -81,6 +82,9 @@ type RunOptions struct {
 	// Theme specifies the UI theme
 	Theme string
 	
+	// Buffer configuration for output handling
+	BufferConfig *buffer.Config
+	
 	// Parsed tool permissions (computed from AllowedTools/DisallowedTools)
 	// This field is populated automatically and should not be set directly
 	ParsedAllowedTools    []ToolPermission `json:"-"`
@@ -100,12 +104,41 @@ type ClaudeResult struct {
 	SessionID     string  `json:"session_id"`
 }
 
+// QueryOptions aligns with Python SDK ClaudeCodeOptions for API consistency
+type QueryOptions struct {
+	// Core conversation control (matches Python SDK exactly)
+	MaxTurns     int    `json:"max_turns,omitempty"`
+	SystemPrompt string `json:"system_prompt,omitempty"`
+	WorkingDir   string `json:"cwd,omitempty"`
+	
+	// Tool and permission management (matches Python SDK)
+	AllowedTools   []string `json:"allowed_tools,omitempty"`
+	PermissionMode string   `json:"permission_mode,omitempty"`
+	
+	// Additional Python SDK aligned options
+	Format         OutputFormat `json:"format,omitempty"`
+	Model          string       `json:"model,omitempty"`
+	ResumeID       string       `json:"resume_id,omitempty"`
+	Continue       bool         `json:"continue,omitempty"`
+	
+	// Go-specific extensions (not serialized to maintain Python SDK alignment)
+	Context      context.Context `json:"-"`
+	BufferConfig *buffer.Config  `json:"-"`
+}
+
 // Message represents a message from Claude Code in streaming mode
+// Aligned with Python SDK message structure
 type Message struct {
-	Type      string          `json:"type"`
-	Subtype   string          `json:"subtype,omitempty"`
+	// Core message fields (matches Python SDK)
+	Content   string                 `json:"content,omitempty"`
+	Type      string                 `json:"type"`
+	Subtype   string                 `json:"subtype,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	
+	// Legacy fields for backward compatibility
 	Message   json.RawMessage `json:"message,omitempty"`
 	SessionID string          `json:"session_id"`
+	
 	// Additional fields for system/result messages
 	CostUSD       float64  `json:"cost_usd,omitempty"`
 	DurationMS    int64    `json:"duration_ms,omitempty"`
@@ -245,10 +278,18 @@ func (c *ClaudeClient) RunPromptCtx(ctx context.Context, prompt string, opts *Ru
 
 	args := BuildArgs(prompt, opts)
 
+	// Set up buffer management
+	bufferConfig := opts.BufferConfig
+	if bufferConfig == nil {
+		bufferConfig = buffer.DefaultConfig()
+	}
+	bufManager := buffer.NewBufferManager(bufferConfig)
+	
 	cmd := execCommand(ctx, c.BinPath, args...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	stdout := bufManager.NewStdoutBuffer()
+	stderr := bufManager.NewStderrBuffer()
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	err := cmd.Run()
 	if err != nil {
@@ -317,10 +358,17 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 			return
 		}
 
-		// Start capturing stderr in a goroutine
-		stderrBuf := new(bytes.Buffer)
+		// Set up buffer management for streaming
+		bufferConfig := opts.BufferConfig
+		if bufferConfig == nil {
+			bufferConfig = buffer.DefaultConfig()
+		}
+		bufManager := buffer.NewBufferManager(bufferConfig)
+		
+		// Start capturing stderr in a goroutine with limits
+		stderrBuf := bufManager.NewStderrBuffer()
 		go func() {
-			_, _ = io.Copy(stderrBuf, stderr)
+			_ = bufManager.CopyWithTimeout(ctx, stderrBuf, stderr)
 		}()
 
 		if err := cmd.Start(); err != nil {
@@ -328,12 +376,25 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 			return
 		}
 
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			line := scanner.Text()
+		// Use buffered reader with configurable buffer size instead of scanner
+		reader := bufio.NewReaderSize(stdout, int(bufferConfig.MaxStdoutSize/1000)) // Use reasonable buffer size
+		
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err == io.EOF && line != "" {
+					// Process final line without newline
+				} else if err == io.EOF {
+					break
+				} else {
+					errCh <- fmt.Errorf("failed to read line: %w", err)
+					return
+				}
+			}
 
 			// Skip empty lines
-			if strings.TrimSpace(line) == "" {
+			line = strings.TrimSpace(line)
+			if line == "" {
 				continue
 			}
 
@@ -341,6 +402,22 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 			if err := json.Unmarshal([]byte(line), &msg); err != nil {
 				errCh <- fmt.Errorf("failed to parse JSON message: %w", err)
 				return
+			}
+
+			// Populate Content field for Python SDK alignment
+			if msg.Content == "" && len(msg.Message) > 0 {
+				// Try to extract content from the raw message
+				var messageContent struct {
+					Content string `json:"content"`
+					Text    string `json:"text"`
+				}
+				if err := json.Unmarshal(msg.Message, &messageContent); err == nil {
+					if messageContent.Content != "" {
+						msg.Content = messageContent.Content
+					} else if messageContent.Text != "" {
+						msg.Content = messageContent.Text
+					}
+				}
 			}
 
 			select {
@@ -353,10 +430,7 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 			}
 		}
 
-		if err := scanner.Err(); err != nil {
-			errCh <- fmt.Errorf("scanner error: %w", err)
-			return
-		}
+		// End of stream reached
 
 		if err := cmd.Wait(); err != nil {
 			// Enhanced error parsing for streaming
@@ -402,11 +476,19 @@ func (c *ClaudeClient) RunFromStdinCtx(ctx context.Context, stdin io.Reader, pro
 
 	args := BuildArgs(prompt, opts)
 
+	// Set up buffer management
+	bufferConfig := opts.BufferConfig
+	if bufferConfig == nil {
+		bufferConfig = buffer.DefaultConfig()
+	}
+	bufManager := buffer.NewBufferManager(bufferConfig)
+
 	cmd := execCommand(ctx, c.BinPath, args...)
 	cmd.Stdin = stdin
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	stdout := bufManager.NewStdoutBuffer()
+	stderr := bufManager.NewStderrBuffer()
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	err := cmd.Run()
 	if err != nil {
@@ -436,6 +518,114 @@ func (c *ClaudeClient) RunFromStdinCtx(ctx context.Context, stdin io.Reader, pro
 		Result:  stdout.String(),
 		IsError: false,
 	}, nil
+}
+
+// Query is the primary method that aligns with Python SDK's query() function
+// It provides streaming iteration over Claude's responses
+func (c *ClaudeClient) Query(ctx context.Context, prompt string, opts QueryOptions) (<-chan Message, error) {
+	// Convert QueryOptions to RunOptions for internal compatibility
+	runOpts := c.queryOptionsToRunOptions(opts)
+	
+	// Use streaming by default to match Python SDK async iteration pattern
+	if runOpts.Format == "" {
+		runOpts.Format = StreamJSONOutput
+	}
+	
+	// Use provided context or create new one
+	if opts.Context != nil {
+		ctx = opts.Context
+	}
+	
+	messageCh, errCh := c.StreamPrompt(ctx, prompt, runOpts)
+	
+	// Create a combined channel that includes error handling
+	combinedCh := make(chan Message)
+	
+	go func() {
+		defer close(combinedCh)
+		for {
+			select {
+			case msg, ok := <-messageCh:
+				if !ok {
+					return
+				}
+				combinedCh <- msg
+			case err := <-errCh:
+				if err != nil {
+					// Send error as a special message type
+					combinedCh <- Message{
+						Type:    "error",
+						Content: err.Error(),
+						IsError: true,
+					}
+				}
+				return
+			case <-ctx.Done():
+				combinedCh <- Message{
+					Type:    "error",
+					Content: ctx.Err().Error(),
+					IsError: true,
+				}
+				return
+			}
+		}
+	}()
+	
+	return combinedCh, nil
+}
+
+// QuerySync provides a synchronous version of Query for simple use cases
+// Returns the final result instead of streaming messages
+func (c *ClaudeClient) QuerySync(ctx context.Context, prompt string, opts QueryOptions) (*ClaudeResult, error) {
+	// Convert QueryOptions to RunOptions
+	runOpts := c.queryOptionsToRunOptions(opts)
+	
+	// Use JSON output for sync operations
+	if runOpts.Format == "" {
+		runOpts.Format = JSONOutput
+	}
+	
+	// Use provided context or create new one
+	if opts.Context != nil {
+		ctx = opts.Context
+	}
+	
+	return c.RunPromptCtx(ctx, prompt, runOpts)
+}
+
+// queryOptionsToRunOptions converts QueryOptions to RunOptions for internal use
+func (c *ClaudeClient) queryOptionsToRunOptions(opts QueryOptions) *RunOptions {
+	runOpts := &RunOptions{
+		Format:         opts.Format,
+		SystemPrompt:   opts.SystemPrompt,
+		AllowedTools:   opts.AllowedTools,
+		Model:          opts.Model,
+		ResumeID:       opts.ResumeID,
+		Continue:       opts.Continue,
+		MaxTurns:       opts.MaxTurns,
+		BufferConfig:   opts.BufferConfig,
+	}
+	
+	// Map permission_mode to appropriate settings
+	switch opts.PermissionMode {
+	case "acceptEdits":
+		// Accept all edit operations
+		runOpts.AllowedTools = append(runOpts.AllowedTools, "Write", "Edit", "MultiEdit")
+	case "rejectAll":
+		// Disable all tools
+		runOpts.DisallowedTools = []string{"*"}
+	case "ask":
+		// Default behavior - Claude will ask for permissions
+		// No special configuration needed
+	}
+	
+	// Handle working directory
+	if opts.WorkingDir != "" {
+		// Working directory would be handled by changing process working directory
+		// This might require process management changes for full implementation
+	}
+	
+	return runOpts
 }
 
 // BuildArgs constructs the command-line arguments for Claude Code

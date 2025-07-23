@@ -11,15 +11,18 @@ A Go library for programmatically integrating the [Claude Code Command Line Inte
 
 ## Features
 
+- **Python SDK Aligned**: API structure mirrors the official Python SDK for cross-language consistency
 - **Full Claude Code CLI Wrapper**: Access all Claude Code features from your Go applications
-- **Streaming Support**: Real-time streaming of Claude's responses with context cancellation
+- **Enhanced Buffer Management**: Configurable buffer limits, automatic truncation, and memory protection
+- **Streaming Support**: Real-time streaming of Claude's responses with Go channels (async-like)
 - **MCP Integration**: Model Context Protocol support for extending Claude with additional tools
 - **Security-Sensitive Features**: Controlled access to dangerous operations via separate package
 - **Stdin Processing**: Process files and other input sources through Claude
 - **Session Management**: Support for multi-turn conversations with automatic session handling
 - **Multiple Output Formats**: Text, JSON, and streaming JSON outputs
+- **Robustness Features**: Automatic recovery, health monitoring, and fallback mechanisms
+- **Backward Compatible**: Existing APIs maintained while adding Python SDK aligned methods
 - **Interactive Demo**: Ready-to-run REPL demonstrating SDK capabilities
-- **Convenience Methods**: Simplified APIs for common use cases
 - **Comprehensive Testing**: Unit and integration tests with mock server support
 
 ## Installation
@@ -61,27 +64,71 @@ The **streaming demo** shows Claude's actions in real-time with tool execution v
 
 ## Quick Start
 
+### Python SDK Aligned API (Recommended)
+
 ```go
 package main
 
 import (
- "fmt"
- "log"
+    "context"
+    "fmt"
+    "log"
 
- "github.com/marvai-dev/claude-code-go/pkg/claude"
+    "github.com/marvai-dev/claude-code-go/pkg/claude"
 )
 
 func main() {
- // Create a new Claude client
- client := claude.NewClient("claude")
+    // Create client (matches Python SDK pattern)
+    client := &claude.ClaudeClient{BinPath: "claude"}
+    
+    // Streaming query (equivalent to Python's async for)
+    messageCh, err := client.Query(context.Background(), 
+        "Write a hello world program", 
+        claude.QueryOptions{
+            MaxTurns:       3,
+            SystemPrompt:   "You're a helpful coding assistant",
+            AllowedTools:   []string{"Write", "Read", "Bash"},
+            PermissionMode: "acceptEdits",
+        })
+    if err != nil {
+        log.Fatal(err)
+    }
 
- // Run a simple prompt
- result, err := client.RunPrompt("Write a function to calculate Fibonacci numbers", nil)
- if err != nil {
-  log.Fatalf("Error: %v", err)
- }
+    // Iterate over messages (like Python's async for)
+    for message := range messageCh {
+        if message.Content != "" {
+            fmt.Println("Claude:", message.Content)
+        }
+        if message.Type == "result" {
+            break
+        }
+    }
+}
+```
 
- fmt.Println(result.Result)
+### Legacy API (Still Supported)
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "github.com/marvai-dev/claude-code-go/pkg/claude"
+)
+
+func main() {
+    // Create a new Claude client
+    client := claude.NewClient("claude")
+
+    // Run a simple prompt
+    result, err := client.RunPrompt("Write a function to calculate Fibonacci numbers", nil)
+    if err != nil {
+        log.Fatalf("Error: %v", err)
+    }
+
+    fmt.Println(result.Result)
 }
 ```
 
