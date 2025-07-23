@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/lancekrogers/claude-code-go/pkg/claude"
+	"github.com/marvai-dev/claude-code-go/pkg/claude"
 )
 
 // isExitCommand checks if the input is a command to exit the REPL

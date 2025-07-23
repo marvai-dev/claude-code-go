@@ -4,8 +4,8 @@
 
 # Claude Code Go SDK
 
-[![CI](https://github.com/lancekrogers/claude-code-go/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/lancekrogers/claude-code-go/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/lancekrogers/claude-code-go.svg)](https://pkg.go.dev/…)
+[![CI](https://github.com/marvai-dev/claude-code-go/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/marvai-dev/claude-code-go/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/marvai-dev/claude-code-go.svg)](https://pkg.go.dev/…)
 
 A Go library for programmatically integrating the [Claude Code Command Line Interface](https://docs.anthropic.com/en/docs/claude-code) into Go applications. This SDK provides a Go-native interface to all Claude Code CLI features, enabling you to build AI-powered applications that leverage Claude's coding capabilities.
 
@@ -25,7 +25,7 @@ A Go library for programmatically integrating the [Claude Code Command Line Inte
 ## Installation
 
 ```bash
-go get github.com/lancekrogers/claude-code-go
+go get github.com/marvai-dev/claude-code-go
 ```
 
 ## Quick Demo
@@ -34,7 +34,7 @@ Try the interactive streaming demo to see the SDK's real-time capabilities:
 
 ```bash
 # Clone the repository
-git clone https://github.com/lancekrogers/claude-code-go
+git clone https://github.com/marvai-dev/claude-code-go
 cd claude-code-go
 
 # Run the streaming demo (default - shows real-time tool execution)
@@ -68,7 +68,7 @@ import (
  "fmt"
  "log"
 
- "github.com/lancekrogers/claude-code-go/pkg/claude"
+ "github.com/marvai-dev/claude-code-go/pkg/claude"
 )
 
 func main() {
@@ -281,7 +281,7 @@ func (c *ClaudeClient) ResumeConversation(prompt, sessionID string) (*ClaudeResu
 For advanced use cases that require bypassing Claude's safety controls, the SDK provides a separate `dangerous` package:
 
 ```go
-import "github.com/lancekrogers/claude-code-go/pkg/claude/dangerous"
+import "github.com/marvai-dev/claude-code-go/pkg/claude/dangerous"
 
 // SECURITY REVIEW REQUIRED: Using dangerous Claude client
 // JUSTIFICATION: Automated deployment requires permission bypass

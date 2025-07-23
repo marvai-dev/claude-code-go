@@ -6,7 +6,7 @@ Thank you for your interest in contributing! This guide will help you understand
 
 This project is a **Go SDK library** that provides programmatic access to the Claude Code CLI. It enables Go developers to integrate Claude Code into their applications via a clean, well-tested API.
 
-**Import Path**: `github.com/lancekrogers/claude-code-go/pkg/claude`
+**Import Path**: `github.com/marvai-dev/claude-code-go/pkg/claude`
 
 For official Claude Code documentation and SDK patterns, see the [Claude Code SDK Documentation](https://docs.anthropic.com/en/docs/claude-code/sdk).
 
@@ -56,7 +56,7 @@ The SDK executes `claude` CLI as subprocess and parses responses.
 ### Quick Start
 ```bash
 # Clone the repository
-git clone https://github.com/lancekrogers/claude-code-go
+git clone https://github.com/marvai-dev/claude-code-go
 cd claude-code-go
 
 # Install dependencies

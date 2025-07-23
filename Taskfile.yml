@@ -336,7 +336,7 @@ tasks:
       - echo "   • Coverage at {{.COVERAGE_DIR}}/coverage.html"
       - echo ""
       - echo "🚀 Usage:"
-      - echo "   • import \"github.com/lancekrogers/claude-code-go/pkg/claude\""
+      - echo "   • import \"github.com/marvai-dev/claude-code-go/pkg/claude\""
       - echo "   • See examples/ for usage patterns"
       - echo ""
 
@@ -370,7 +370,7 @@ tasks:
     desc: "Generate and serve documentation"
     cmds:
       - echo "📚 Starting documentation server..."
-      - echo "Visit http://localhost:6060/pkg/github.com/lancekrogers/claude-code-go/"
+      - echo "Visit http://localhost:6060/pkg/github.com/marvai-dev/claude-code-go/"
       - godoc -http=:6060
 
   # Integration Testing Tasks

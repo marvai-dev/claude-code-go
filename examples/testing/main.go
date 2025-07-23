@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lancekrogers/claude-code-go/pkg/claude"
+	"github.com/marvai-dev/claude-code-go/pkg/claude"
 )
 
 // Example of how to test the Claude Code Go SDK locally

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/lancekrogers/claude-code-go/pkg/claude"
+	"github.com/marvai-dev/claude-code-go/pkg/claude"
 )
 
 // NewTestClient creates a Claude client for testing

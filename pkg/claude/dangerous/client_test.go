@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/lancekrogers/claude-code-go/pkg/claude"
+	"github.com/marvai-dev/claude-code-go/pkg/claude"
 )
 
 func TestNewDangerousClient_RequiresEnvironmentVariable(t *testing.T) {

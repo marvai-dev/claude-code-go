@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/lancekrogers/claude-code-go/pkg/claude"
+	"github.com/marvai-dev/claude-code-go/pkg/claude"
 )
 
 func main() {

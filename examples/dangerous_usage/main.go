@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/lancekrogers/claude-code-go/pkg/claude/dangerous"
+	"github.com/marvai-dev/claude-code-go/pkg/claude/dangerous"
 )
 
 // SECURITY REVIEW REQUIRED: This example demonstrates dangerous Claude operations

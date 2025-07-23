@@ -2,6 +2,6 @@ module dangerous-usage-example
 
 go 1.24.2
 
-require github.com/lancekrogers/claude-code-go v0.0.0
+require github.com/marvai-dev/claude-code-go v0.0.0
 
-replace github.com/lancekrogers/claude-code-go => ../..
+replace github.com/marvai-dev/claude-code-go => ../..

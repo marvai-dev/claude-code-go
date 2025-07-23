@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lancekrogers/claude-code-go/pkg/claude"
-	"github.com/lancekrogers/claude-code-go/test/utils"
+	"github.com/marvai-dev/claude-code-go/pkg/claude"
+	"github.com/marvai-dev/claude-code-go/test/utils"
 )
 
 func TestStreamingPrompt(t *testing.T) {

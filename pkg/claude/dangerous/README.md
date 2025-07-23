@@ -62,7 +62,7 @@ err := client.ENABLE_MCP_DEBUG()
 package main
 
 import (
-    "github.com/lancekrogers/claude-code-go/pkg/claude/dangerous"
+    "github.com/marvai-dev/claude-code-go/pkg/claude/dangerous"
 )
 
 func main() {
