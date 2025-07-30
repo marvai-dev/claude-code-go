@@ -29,6 +29,16 @@ const (
 	StreamJSONOutput OutputFormat = "stream-json"
 )
 
+// InputFormat defines the input format for Claude Code requests
+type InputFormat string
+
+const (
+	// TextInput sends plain text input (default)
+	TextInput InputFormat = "text"
+	// StreamJSONInput sends streaming JSON input for multiple prompts
+	StreamJSONInput InputFormat = "stream-json"
+)
+
 // ClaudeClient is the main client for interacting with Claude Code
 type ClaudeClient struct {
 	// BinPath is the path to the Claude Code binary
@@ -41,6 +51,8 @@ type ClaudeClient struct {
 type RunOptions struct {
 	// Format specifies the output format (text, json, stream-json)
 	Format OutputFormat
+	// InputFormat specifies the input format (text, stream-json)
+	InputFormat InputFormat
 	// SystemPrompt overrides the default system prompt
 	SystemPrompt string
 	// AppendPrompt appends to the default system prompt
@@ -124,6 +136,18 @@ type QueryOptions struct {
 	// Go-specific extensions (not serialized to maintain Python SDK alignment)
 	Context      context.Context `json:"-"`
 	BufferConfig *buffer.Config  `json:"-"`
+}
+
+// StreamInputMessage represents a message for streaming input to Claude Code
+type StreamInputMessage struct {
+	Type    string              `json:"type"`
+	Message StreamInputContent  `json:"message"`
+}
+
+// StreamInputContent represents the content of a streaming input message
+type StreamInputContent struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
 // Message represents a message from Claude Code in streaming mode
@@ -321,8 +345,23 @@ func (c *ClaudeClient) RunPromptCtx(ctx context.Context, prompt string, opts *Ru
 	}, nil
 }
 
-// StreamPrompt executes a prompt with Claude Code and streams the results through a channel
+// StreamPrompt executes a prompt with Claude Code and streams the results thro	ugh a channel
 func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *RunOptions) (<-chan Message, <-chan error) {
+	// Create a channel for a single prompt
+	promptCh := make(chan string, 1)
+	promptCh <- prompt
+	close(promptCh)
+	
+	// Use the multi-prompt streaming function
+	return c.StreamPromptsToSession(ctx, promptCh, opts)
+}
+
+// StreamPromptsToSession starts a Claude Code session and streams prompts to it continuously
+func (c *ClaudeClient) StreamPromptsToSession(
+	ctx context.Context,
+	promptCh <-chan string,
+	opts *RunOptions,
+) (<-chan Message, <-chan error) {
 	messageCh := make(chan Message)
 	errCh := make(chan error, 1)
 
@@ -333,11 +372,13 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 	// Force stream-json format for streaming
 	streamOpts := *opts
 	streamOpts.Format = StreamJSONOutput
+	streamOpts.InputFormat = StreamJSONInput
 
 	// Claude CLI requires --verbose when using --output-format=stream-json with --print
 	streamOpts.Verbose = true
 
-	args := BuildArgs(prompt, &streamOpts)
+	// Remove the initial prompt since we'll stream through stdin
+	args := BuildArgs("", &streamOpts)
 
 	go func() {
 		defer close(messageCh)
@@ -345,6 +386,12 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 
 		// Create a custom command that supports context
 		cmd := execCommand(ctx, c.BinPath, args...)
+
+		stdin, err := cmd.StdinPipe()
+		if err != nil {
+			errCh <- fmt.Errorf("failed to get stdin pipe: %w", err)
+			return
+		}
 
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
@@ -375,6 +422,67 @@ func (c *ClaudeClient) StreamPrompt(ctx context.Context, prompt string, opts *Ru
 			errCh <- fmt.Errorf("failed to start command: %w", err)
 			return
 		}
+
+		// Channel to signal when command is ready to receive input
+		cmdReady := make(chan struct{})
+		
+		// Start a goroutine to handle input prompts
+		go func() {
+			defer stdin.Close()
+			
+			// Wait for command to be ready before processing prompts
+			select {
+			case <-cmdReady:
+				// Command is ready, proceed with prompt processing
+			case <-ctx.Done():
+				return
+			}
+			
+			for {
+				select {
+				case prompt, ok := <-promptCh:
+					if !ok {
+						// Prompt channel closed, close stdin
+						return
+					}
+					
+					// Create JSON message for streaming input
+					streamMsg := StreamInputMessage{
+						Type: "user",
+						Message: StreamInputContent{
+							Role:    "user",
+							Content: prompt,
+						},
+					}
+					
+					// Encode as JSON and send
+					jsonData, err := json.Marshal(streamMsg)
+					if err != nil {
+						errCh <- fmt.Errorf("failed to marshal stream input message: %w", err)
+						return
+					}
+					
+					if _, err := fmt.Fprintln(stdin, string(jsonData)); err != nil {
+						errCh <- fmt.Errorf("failed to write JSON prompt to stdin: %w", err)
+						return
+					}
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+		
+		// Give the command a moment to initialize before signaling ready
+		// This prevents the race condition where we write to stdin before 
+		// the Claude process is ready to read from it
+		go func() {
+			select {
+			case <-time.After(100 * time.Millisecond):
+				close(cmdReady)
+			case <-ctx.Done():
+				return
+			}
+		}()
 
 		// Use buffered reader with configurable buffer size instead of scanner
 		reader := bufio.NewReaderSize(stdout, int(bufferConfig.MaxStdoutSize/1000)) // Use reasonable buffer size
@@ -640,6 +748,10 @@ func BuildArgs(prompt string, opts *RunOptions) []string {
 
 	if opts.Format != "" {
 		args = append(args, "--output-format", string(opts.Format))
+	}
+
+	if opts.InputFormat != "" {
+		args = append(args, "--input-format", string(opts.InputFormat))
 	}
 
 	if opts.SystemPrompt != "" {

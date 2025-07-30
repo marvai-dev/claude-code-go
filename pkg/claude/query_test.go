@@ -3,6 +3,9 @@ package claude
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -13,8 +16,9 @@ func TestQuery_PythonSDKAlignment(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
-
-	client := &ClaudeClient{BinPath: "echo"}
+	
+	skipIfNoClaudeCLI(t)
+	client := newTestClient(t)
 	ctx := context.Background()
 
 	// Test basic Query method with QueryOptions
@@ -50,7 +54,8 @@ func TestQuerySync_PythonSDKAlignment(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	client := &ClaudeClient{BinPath: "echo"}
+	skipIfNoClaudeCLI(t)
+	client := newTestClient(t)
 	ctx := context.Background()
 
 	// Test synchronous Query method
@@ -198,4 +203,68 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// Local test helper functions to avoid import cycle with test/utils
+
+// skipIfNoClaudeCLI skips the test if Claude Code CLI is not available
+func skipIfNoClaudeCLI(t *testing.T) {
+	if os.Getenv("USE_MOCK_SERVER") == "1" {
+		return // Mock server tests don't need Claude CLI
+	}
+	
+	claudePath := getTestClaudePath(t)
+	if _, err := exec.LookPath(claudePath); err != nil {
+		t.Skipf("Skipping test: Claude Code CLI not found at '%s'. Install Claude Code CLI or use mock server with USE_MOCK_SERVER=1", claudePath)
+	}
+	
+	// Test if Claude CLI is working (it will handle auth automatically)
+	cmd := exec.Command(claudePath, "--help")
+	if err := cmd.Run(); err != nil {
+		t.Skip("Skipping test: Claude Code CLI not working. Please ensure it's properly installed.")
+	}
+}
+
+// newTestClient creates a Claude client for testing
+func newTestClient(t *testing.T) *ClaudeClient {
+	return NewClient(getTestClaudePath(t))
+}
+
+// getTestClaudePath returns the path to Claude CLI for testing
+func getTestClaudePath(t *testing.T) string {
+	if path := os.Getenv("CLAUDE_CODE_PATH"); path != "" {
+		return path
+	}
+	
+	// Check if mock server is preferred
+	if os.Getenv("USE_MOCK_SERVER") == "1" {
+		return createMockClaudeScript(t)
+	}
+	
+	return "claude" // Default Claude Code CLI
+}
+
+// createMockClaudeScript creates a shell script that returns valid JSON
+func createMockClaudeScript(t *testing.T) string {
+	tempDir := t.TempDir()
+	mockScript := filepath.Join(tempDir, "mock-claude.sh")
+	
+	content := `#!/bin/bash
+# Mock Claude CLI that returns appropriate JSON response based on format
+if [[ "$*" == *"--format json"* ]]; then
+  # For regular JSON format (QuerySync)
+  echo '{"result": "Mock response", "sessionId": "test-session", "costUSD": 0.001, "durationMS": 100}'
+else
+  # For streaming format or default (Query)
+  echo '{"type": "system", "subtype": "init", "content": "Initializing"}'
+  echo '{"type": "assistant", "content": "Mock streaming response"}'
+  echo '{"type": "result", "result": "Mock response", "sessionId": "test-session", "costUSD": 0.001, "durationMS": 100}'
+fi
+`
+	
+	if err := os.WriteFile(mockScript, []byte(content), 0755); err != nil {
+		t.Fatalf("Failed to create mock script: %v", err)
+	}
+	
+	return mockScript
 }
